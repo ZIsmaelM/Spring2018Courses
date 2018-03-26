@@ -22,57 +22,24 @@ using glm::vec3;
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
+int starTime;
+float starVelocity;
 vector<vec3> stars(1000);
 SDL_Surface* screen;
 
 // --------------------------------------------------------
 // FUNCTION DECLARATIONS
 
-void Draw();
+//void Draw();
 void DrawColors();
 void DrawStars();
+void Update();
+void Assign(vec3, vector<vec3>&, int);
+void Interpolate(float, float, vector<vec3>&);
+void InterpolateVec3(vec3, vec3, vector<vec3>&);
 
 // --------------------------------------------------------
 // FUNCTION DEFINITIONS
-
-void foo( vec3 a, vector<vec3>& vectArray, int index) {
-	vectArray[index].x = a.x;
-	vectArray[index].y = a.y;
-	vectArray[index].z = a.z;
-}
-void Interpolate( float a, float b, vector<float>& result) {
-	int samples = result.size();
-	float dist = b - a;
-	result[0] = a;
-	result[samples-1] = b;
-
-	for (int i = 1; i <= samples; ++i) {
-		float mag = i/samples;
-		int L = (samples-mag)*a;
-		int R = mag*b;
-		result[i] = (int)(i*(dist/samples)+a);
-		cout << result[i] << " ";
-	}
-	cout << "" << endl;
-}
-
-void InterpolateVec3( vec3 a, vec3 b, vector<vec3>& result) {
-	int numSamples = result.size();
-	int numPoints = 3;
-	
-
-	foo(a,result,0);
-	foo(b,result,numSamples-1);
-
-	int dist;
-	for (int i = 0; i < numSamples; ++i) {
-		for (int j = 0; j < numPoints; ++j) {
-			float dist = b[j] - a[j];
-			float t = ((float)i/(numSamples-1)) * dist;
-			result[i][j] = a[j] + t;
-		}
-	}
-}
 
 int main( int argc, char* argv[] )
 {
@@ -100,10 +67,16 @@ int main( int argc, char* argv[] )
 		stars[i].z = float(rand()-rand()) / float(RAND_MAX);
 	}
 
+	starTime = SDL_GetTicks();
+	starVelocity = 0.00000001;
 	screen = InitializeSDL( SCREEN_WIDTH, SCREEN_HEIGHT );
+	SDL_FillRect( screen, 0, 0 );
+	int blur = 1000;
 	while( NoQuitMessageSDL() )
 	{
-		Draw();
+		SDL_FillRect( screen, 0, 0 );
+		Update();
+		DrawStars();
 	}
 	SDL_SaveBMP( screen, "screenshot.bmp" );
 	return 0;
@@ -141,27 +114,76 @@ void DrawColors()
 	SDL_UpdateRect( screen, 0, 0, 0, 0 );
 }
 
-void Draw()
+void DrawStars()
 {
-	vec3 white(1,1,1);
-
-	SDL_FillRect( screen, 0, 0 );
+	// SDL_FillRect( screen, 0, 0 );
 	//if( SDL_MUSTLOCK(screen) )
 	//	SDL_LockSurface(screen);
 
 	int f = SCREEN_HEIGHT / 2;
 	for( int s=0; s<stars.size(); ++s ) {
 
-		float u = f * ((float)stars[s].x/stars[s].z) + (SCREEN_WIDTH/2);
-		int v = f * ((float)stars[s].y/stars[s].z) + (SCREEN_HEIGHT/2);
+		stars[s].z -= starVelocity * starTime;
+		if (stars[s].z <= 0)
+			stars[s].z += 1;
+		if (stars[s].z > 1)
+			stars[s].z -= 1;
 
-		PutPixelSDL( screen, u, v, white);
-		cout << u << "		" << v << endl;
-		cout << "" << endl << s << endl << "" << endl;
+		float u = f * ((float)stars[s].x/stars[s].z) + (SCREEN_WIDTH/2);
+		float v = f * ((float)stars[s].y/stars[s].z) + (SCREEN_HEIGHT/2);
+
+		vec3 starColor = (0.2f*vec3(1,1,1)) / (stars[s].z*stars[s].z);
+		PutPixelSDL( screen, u, v, starColor);
 	}
 
 	if( SDL_MUSTLOCK(screen) )
 		SDL_UnlockSurface(screen);
 
 	SDL_UpdateRect( screen, 0, 0, 0, 0 );
+}
+
+void Assign( vec3 a, vector<vec3>& vectArray, int index) {
+	vectArray[index].x = a.x;
+	vectArray[index].y = a.y;
+	vectArray[index].z = a.z;
+}
+
+void Update() {
+	int t2 = SDL_GetTicks();
+	float dt = float(t2-starTime);
+	starTime = t2;
+}
+
+void Interpolate( float a, float b, vector<float>& result) {
+	int samples = result.size();
+	float dist = b - a;
+	result[0] = a;
+	result[samples-1] = b;
+
+	for (int i = 1; i <= samples; ++i) {
+		float mag = i/samples;
+		int L = (samples-mag)*a;
+		int R = mag*b;
+		result[i] = (int)(i*(dist/samples)+a);
+		cout << result[i] << " ";
+	}
+	cout << "" << endl;
+}
+
+void InterpolateVec3( vec3 a, vec3 b, vector<vec3>& result) {
+	int numSamples = result.size();
+	int numPoints = 3;
+	
+
+	Assign(a,result,0);
+	Assign(b,result,numSamples-1);
+
+	int dist;
+	for (int i = 0; i < numSamples; ++i) {
+		for (int j = 0; j < numPoints; ++j) {
+			float dist = b[j] - a[j];
+			float t = ((float)i/(numSamples-1)) * dist;
+			result[i][j] = a[j] + t;
+		}
+	}
 }
