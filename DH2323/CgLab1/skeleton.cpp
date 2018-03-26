@@ -22,12 +22,15 @@ using glm::vec3;
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
+vector<vec3> stars(1000);
 SDL_Surface* screen;
 
 // --------------------------------------------------------
 // FUNCTION DECLARATIONS
 
 void Draw();
+void DrawColors();
+void DrawStars();
 
 // --------------------------------------------------------
 // FUNCTION DEFINITIONS
@@ -74,17 +77,28 @@ void InterpolateVec3( vec3 a, vec3 b, vector<vec3>& result) {
 int main( int argc, char* argv[] )
 {
 
-	std::vector<vec3> result(4);
-	vec3 a(1,4,9.2);
-	vec3 b(4,1,9.8);
-	InterpolateVec3(a,b,result);
-	for (int i=0; i<result.size(); ++i) {
-		cout << "( "
-		<< result[i].x << ", "
-		<< result[i].y << ", "
-		<< result[i].z << " ) ";
+	///////////////////////
+	//		Numbers		///
+	///////////////////////
+	// std::vector<vec3> result(4);
+	// vec3 a(1,4,9.2);
+	// vec3 b(4,1,9.8);
+	// InterpolateVec3(a,b,result);
+	// for (int i=0; i<result.size(); ++i) {
+	// 	cout << "( "
+	// 	<< result[i].x << ", "
+	// 	<< result[i].y << ", "
+	// 	<< result[i].z << " ) ";
+	// }
+	// cout << "" << endl;
+
+	// Set each star's initial position to a random location
+	float r = float(rand()) / float(RAND_MAX);
+	for (int i = 0; i < stars.size(); ++i) {
+		stars[i].x = float(rand()-rand()) / float(RAND_MAX);
+		stars[i].y = float(rand()-rand()) / float(RAND_MAX);
+		stars[i].z = float(rand()-rand()) / float(RAND_MAX);
 	}
-	cout << "" << endl;
 
 	screen = InitializeSDL( SCREEN_WIDTH, SCREEN_HEIGHT );
 	while( NoQuitMessageSDL() )
@@ -95,7 +109,7 @@ int main( int argc, char* argv[] )
 	return 0;
 }
 
-void Draw()
+void DrawColors()
 {
 	vec3 topLeft(1,0,0); // red
 	vec3 topRight(0,0,1); // blue
@@ -119,6 +133,31 @@ void Draw()
 			// vec3 color(0,0,1);
 			// PutPixelSDL( screen, x, y, color );
 		}
+	}
+
+	if( SDL_MUSTLOCK(screen) )
+		SDL_UnlockSurface(screen);
+
+	SDL_UpdateRect( screen, 0, 0, 0, 0 );
+}
+
+void Draw()
+{
+	vec3 white(1,1,1);
+
+	SDL_FillRect( screen, 0, 0 );
+	//if( SDL_MUSTLOCK(screen) )
+	//	SDL_LockSurface(screen);
+
+	int f = SCREEN_HEIGHT / 2;
+	for( int s=0; s<stars.size(); ++s ) {
+
+		float u = f * ((float)stars[s].x/stars[s].z) + (SCREEN_WIDTH/2);
+		int v = f * ((float)stars[s].y/stars[s].z) + (SCREEN_HEIGHT/2);
+
+		PutPixelSDL( screen, u, v, white);
+		cout << u << "		" << v << endl;
+		cout << "" << endl << s << endl << "" << endl;
 	}
 
 	if( SDL_MUSTLOCK(screen) )
