@@ -97,14 +97,27 @@ int main( int argc, char* argv[] )
 
 void Draw()
 {
+	vec3 topLeft(1,0,0); // red
+	vec3 topRight(0,0,1); // blue
+	vec3 bottomLeft(0,1,0); // green
+	vec3 bottomRight(1,1,0); // yellow
 
+	vector<vec3> leftSide( SCREEN_HEIGHT );
+	vector<vec3> rightSide( SCREEN_HEIGHT );
+	InterpolateVec3( topLeft, bottomLeft, leftSide );
+	InterpolateVec3( topRight, bottomRight, rightSide );
+	
 	for( int y=0; y<SCREEN_HEIGHT; ++y )
 	{
 
 		for( int x=0; x<SCREEN_WIDTH; ++x )
 		{
-			vec3 color(0,0,1);
-			PutPixelSDL( screen, x, y, color );
+			vector<vec3> interpolated(SCREEN_WIDTH);
+			InterpolateVec3(leftSide[y],rightSide[y],interpolated);
+			PutPixelSDL( screen, x, y, interpolated[x] );
+
+			// vec3 color(0,0,1);
+			// PutPixelSDL( screen, x, y, color );
 		}
 	}
 
