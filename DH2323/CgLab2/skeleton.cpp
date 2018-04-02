@@ -15,22 +15,27 @@ const int SCREEN_WIDTH = 500;
 const int SCREEN_HEIGHT = 500;
 SDL_Surface* screen;
 int t;
+vector<Triangle> triangles;
 
 // ----------------------------------------------------------------------------
 // FUNCTIONS
 
 void Update();
 void Draw();
+void TriangleIntersect();
+void ClosestIntersection();
 
 int main( int argc, char* argv[] )
 {
 	screen = InitializeSDL( SCREEN_WIDTH, SCREEN_HEIGHT );
 	t = SDL_GetTicks();	// Set start value for timer.
 
+	int i = 5;
 	while( NoQuitMessageSDL() )
 	{
-		Update();
+		if (i > 0) Update();
 		Draw();
+		i--;
 	}
 
 	SDL_SaveBMP( screen, "screenshot.bmp" );
@@ -51,6 +56,7 @@ void Draw()
 	if( SDL_MUSTLOCK(screen) )
 		SDL_LockSurface(screen);
 
+	TriangleIntersect();
 	for( int y=0; y<SCREEN_HEIGHT; ++y )
 	{
 		for( int x=0; x<SCREEN_WIDTH; ++x )
@@ -64,4 +70,41 @@ void Draw()
 		SDL_UnlockSurface(screen);
 
 	SDL_UpdateRect( screen, 0, 0, 0, 0 );
+}
+
+struct Intersection
+{
+	vec3 position;
+	float distance;
+	int triangleIndex;
+};
+
+struct Ray
+{
+	vec3 orig;
+	vec3 dir;
+	float distance;
+};
+
+void TriangleIntersect() {
+	
+	LoadTestModel(triangles);
+
+	// P = O + tR
+	// Ax + By + Cz + D = 0
+	for(int i = 0; i < triangles.size(); i++) {
+		Ray ray;
+		float D = glm::dot(triangles[i].normal, triangles[i].v0);
+		float t = - (glm::dot(triangles[i].normal, ray.orig) + D) / glm::dot(triangles[i].normal, ray.dir);
+	}
+}
+
+bool ClosestIntersection(
+	vec3 start,
+	vec3 dir,
+	const vector<Triangle>& triangles,
+	Intersection& ClosestIntersection) {
+
+
+
 }
