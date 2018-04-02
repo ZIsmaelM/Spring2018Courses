@@ -47,17 +47,17 @@ int main( int argc, char* argv[] )
 	///////////////////////
 	//		Numbers		///
 	///////////////////////
-	// std::vector<vec3> result(4);
-	// vec3 a(1,4,9.2);
-	// vec3 b(4,1,9.8);
-	// InterpolateVec3(a,b,result);
-	// for (int i=0; i<result.size(); ++i) {
-	// 	cout << "( "
-	// 	<< result[i].x << ", "
-	// 	<< result[i].y << ", "
-	// 	<< result[i].z << " ) ";
-	// }
-	// cout << "" << endl;
+	std::vector<vec3> result(4);
+	vec3 a(1,4,9.2);
+	vec3 b(4,1,9.8);
+	InterpolateVec3(a,b,result);
+	for (int i=0; i<result.size(); ++i) {
+		cout << "( "
+		<< result[i].x << ", "
+		<< result[i].y << ", "
+		<< result[i].z << " ) ";
+	}
+	cout << "" << endl;
 
 	// Set each star's initial position to a random location
 	float r = float(rand()) / float(RAND_MAX);
@@ -68,15 +68,19 @@ int main( int argc, char* argv[] )
 	}
 
 	starTime = SDL_GetTicks();
-	starVelocity = 0.00000001;
+	starVelocity = 0.0000001;
 	screen = InitializeSDL( SCREEN_WIDTH, SCREEN_HEIGHT );
 	SDL_FillRect( screen, 0, 0 );
-	int blur = 1000;
+	int blur = 0;
 	while( NoQuitMessageSDL() )
 	{
-		SDL_FillRect( screen, 0, 0 );
+		if (blur == 20) {
+			SDL_FillRect( screen, 0, 0 );
+			blur = 0;
+		}
 		Update();
 		DrawStars();
+		blur++;
 	}
 	SDL_SaveBMP( screen, "screenshot.bmp" );
 	return 0;
@@ -173,10 +177,6 @@ void Interpolate( float a, float b, vector<float>& result) {
 void InterpolateVec3( vec3 a, vec3 b, vector<vec3>& result) {
 	int numSamples = result.size();
 	int numPoints = 3;
-	
-
-	Assign(a,result,0);
-	Assign(b,result,numSamples-1);
 
 	int dist;
 	for (int i = 0; i < numSamples; ++i) {
