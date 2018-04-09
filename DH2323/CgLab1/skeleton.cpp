@@ -24,6 +24,7 @@ const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 int starTime;
 float starVelocity;
+float dt;
 vector<vec3> stars(1000);
 SDL_Surface* screen;
 
@@ -64,23 +65,22 @@ int main( int argc, char* argv[] )
 	for (int i = 0; i < stars.size(); ++i) {
 		stars[i].x = float(rand()-rand()) / float(RAND_MAX);
 		stars[i].y = float(rand()-rand()) / float(RAND_MAX);
-		stars[i].z = float(rand()-rand()) / float(RAND_MAX);
+		stars[i].z = float(rand()) / float(RAND_MAX);
 	}
 
-	starTime = SDL_GetTicks();
-	starVelocity = 0.0000001;
+	starVelocity = 0;
 	screen = InitializeSDL( SCREEN_WIDTH, SCREEN_HEIGHT );
-	SDL_FillRect( screen, 0, 0 );
 	int blur = 0;
 	while( NoQuitMessageSDL() )
 	{
-		if (blur == 20) {
+		if (blur == 30) {
 			SDL_FillRect( screen, 0, 0 );
 			blur = 0;
 		}
 		Update();
 		DrawStars();
 		blur++;
+		starVelocity = 0.0005;
 	}
 	SDL_SaveBMP( screen, "screenshot.bmp" );
 	return 0;
@@ -120,14 +120,11 @@ void DrawColors()
 
 void DrawStars()
 {
-	// SDL_FillRect( screen, 0, 0 );
-	//if( SDL_MUSTLOCK(screen) )
-	//	SDL_LockSurface(screen);
 
 	int f = SCREEN_HEIGHT / 2;
 	for( int s=0; s<stars.size(); ++s ) {
 
-		stars[s].z -= starVelocity * starTime;
+		stars[s].z -= starVelocity * dt;
 		if (stars[s].z <= 0)
 			stars[s].z += 1;
 		if (stars[s].z > 1)
@@ -154,7 +151,7 @@ void Assign( vec3 a, vector<vec3>& vectArray, int index) {
 
 void Update() {
 	int t2 = SDL_GetTicks();
-	float dt = float(t2-starTime);
+	dt = float(t2-starTime);
 	starTime = t2;
 }
 
