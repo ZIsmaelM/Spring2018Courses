@@ -16,8 +16,9 @@ const int SCREEN_HEIGHT = 500;
 SDL_Surface* screen;
 int t;
 vector<Triangle> triangles;
-float focalLength = 0.5;
-vec3 cameraPos(0.7,0.7,-0.9);
+int focalLength = 0.025;
+vec3 cameraPos(0,0,-400);
+float maxFloat = std::numeric_limits<float>::max();
 
 // ----------------------------------------------------------------------------
 // FUNCTIONS
@@ -25,7 +26,7 @@ vec3 cameraPos(0.7,0.7,-0.9);
 struct IntersectInfo
 {
 	vec3 position;
-	float distance;
+	float distance = maxFloat;
 	int triangleIndex;
 };
 
@@ -75,11 +76,10 @@ void Draw()
 
 	//TriangleIntersect();
 	LoadTestModel(triangles);
-	for( int y=0; y<SCREEN_HEIGHT; ++y )
-	{
-		for( int x=0; x<SCREEN_WIDTH; ++x )
-		{
-			vec3 rayOrig = vec3(x,y,focalLength);
+	for( int y=0; y<SCREEN_HEIGHT; ++y ) {
+		for( int x=0; x<SCREEN_WIDTH; ++x ) {
+
+			vec3 rayOrig = cameraPos; //vec3(x,y,-focalLength);
 			vec3 rayDir = vec3(x-(SCREEN_WIDTH/2), y-(SCREEN_HEIGHT/2), focalLength);
 			IntersectInfo intersect;
 
@@ -105,7 +105,10 @@ void Draw()
 	SDL_UpdateRect( screen, 0, 0, 0, 0 );
 }
 
-IntersectInfo TriangleIntersect(const vector<Triangle>& triangles, int index, vec3 rayOrig, vec3 rayDir) {
+IntersectInfo TriangleIntersect(const vector<Triangle>& triangles, 
+	int index, 
+	vec3 rayOrig, 
+	vec3 rayDir) {
 
 	// points on a ray: r = s + td
 	// s = ray orig
@@ -126,17 +129,20 @@ IntersectInfo TriangleIntersect(const vector<Triangle>& triangles, int index, ve
 	// s + td = v0 + u*e1 + v*e2
 	// s - v0 = u*e1 + v*e2 - td
 	vec3 b = rayOrig - t.v0;
+	//cout << b[0] << "	" << b[1] << "	" << b[2] << endl;
 	mat3 A( -rayDir, e1, e2);
 	vec3 x = glm::inverse(A) * b; // (t u v)
 
-	//cout << "x: (" << x[0] << "," << x[1] << "," << x[2] << ")" << endl;
+	//cout << "x: (" << x[0] << "	,	" << x[1] << "	,	" << x[2] << ")" << endl;
 	//getchar();
 	// do not update intersection if ray does not intersect triangle
-	if (x[0] < 0 || x[1] < 0 || x[2] < 0 || x[1] + x[2] > 1)
+	if (x[0] <= 0 || x[1] <= 0 || x[2] <= 0 || x[1] + x[2] >= 1)
 		return rayTri;
 
 	rayTri.position = x;
 	rayTri.distance = abs(x[0]);
+	//cout << x[0] << endl;
+	//cout << rayTri.distance << endl;
 	rayTri.triangleIndex = index;
 	return rayTri;
 
@@ -165,18 +171,21 @@ bool ClosestIntersection(
 
 	//LoadTestModel(triangles);
 
-	float maxFloat = std::numeric_limits<float>::max();
+	//float maxFloat = std::numeric_limits<float>::max();
 
 	ClosestIntersection.distance = maxFloat;
 	ClosestIntersection.triangleIndex = -1;
 
+	bool foo = false;
 	for (int i = 0; i < triangles.size(); i++) {
 		IntersectInfo newIntersection = TriangleIntersect(triangles, i, start, dir);
-		if (newIntersection.distance < ClosestIntersection.distance)
+		if (newIntersection.distance < ClosestIntersection.distance) {
 			ClosestIntersection = newIntersection;
+			foo = true;
+		}
 	}
 
-	if (ClosestIntersection.triangleIndex > 0) {
+	if (foo) {
 		cout << "Intersect" << endl;	
 		return true;
 
