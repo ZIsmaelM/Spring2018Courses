@@ -31,6 +31,8 @@ SDLauxiliary.h
 /home/zim/Desktop/Spring2018Courses/DH2323/CgLab2/SDLauxiliary.h
 TestModel.h
 /home/zim/Desktop/Spring2018Courses/DH2323/CgLab2/TestModel.h
+unistd.h
+-
 
 /usr/include/SDL/SDL.h
 SDL_main.h

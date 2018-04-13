@@ -3,6 +3,7 @@
 #include <SDL.h>
 #include "SDLauxiliary.h"
 #include "TestModel.h"
+#include <unistd.h>
 
 using namespace std;
 using glm::vec3;
@@ -16,13 +17,14 @@ const int SCREEN_HEIGHT = 500;
 SDL_Surface* screen;
 int t;
 vector<Triangle> triangles;
-int focalLength = 0.025;
-vec3 cameraPos(0,0,-400);
+int focalLength = 1;//(SCREEN_WIDTH/2) / tan(45/2);
+vec3 cameraPos(0,0,-focalLength);
 float maxFloat = std::numeric_limits<float>::max();
 
 // ----------------------------------------------------------------------------
 // FUNCTIONS
 
+// Object that stores intersection data
 struct IntersectInfo
 {
 	vec3 position;
@@ -30,16 +32,10 @@ struct IntersectInfo
 	int triangleIndex;
 };
 
-// struct Ray
-// {
-// 	vec3 orig;
-// 	vec3 dir;
-// 	float distance;
-// };
-
 void Update();
 void Draw();
 void TriangleIntersect();
+bool IsEqual(vec3 A, vec3 B);
 bool ClosestIntersection(vec3 start, vec3 dir, const vector<Triangle>& triangles, IntersectInfo& ClosestIntersection);
 
 int main( int argc, char* argv[] )
@@ -47,13 +43,12 @@ int main( int argc, char* argv[] )
 	screen = InitializeSDL( SCREEN_WIDTH, SCREEN_HEIGHT );
 	t = SDL_GetTicks();	// Set start value for timer.
 
-	int i = 5;
 	while( NoQuitMessageSDL() )
 	{
-		if (i > 0) Update();
+		Update();
 		Draw();
-		i--;
 		cout << "render finished" << endl;
+		usleep(25000000);	// delay for 25s
 	}
 
 	SDL_SaveBMP( screen, "screenshot.bmp" );
@@ -74,15 +69,17 @@ void Draw()
 	if( SDL_MUSTLOCK(screen) )
 		SDL_LockSurface(screen);
 
-	//TriangleIntersect();
+	// generate triangles
 	LoadTestModel(triangles);
 	for( int y=0; y<SCREEN_HEIGHT; ++y ) {
 		for( int x=0; x<SCREEN_WIDTH; ++x ) {
 
-			vec3 rayOrig = cameraPos; //vec3(x,y,-focalLength);
+			// set ray direction and origin
+			vec3 rayOrig = cameraPos;
 			vec3 rayDir = vec3(x-(SCREEN_WIDTH/2), y-(SCREEN_HEIGHT/2), focalLength);
 			IntersectInfo intersect;
 
+			// check if an intersection was found
 			bool foo = ClosestIntersection(rayOrig, rayDir, triangles, intersect);
 			vec3 color(0,0,0);
 			if (foo) {
@@ -97,8 +94,7 @@ void Draw()
 		}
 		//cout << "Finished row: " << y << endl;
 	}
-	cout << "waiting for input..." << endl;
-	//getchar();
+
 	if( SDL_MUSTLOCK(screen) )
 		SDL_UnlockSurface(screen);
 
@@ -123,6 +119,7 @@ IntersectInfo TriangleIntersect(const vector<Triangle>& triangles,
 	Triangle t = triangles[index];
 	IntersectInfo rayTri;
 
+	// calculate vectors parallel to triangle edges
 	vec3 e1 = t.v1 - t.v0;
 	vec3 e2 = t.v2 - t.v0;
 
@@ -133,34 +130,15 @@ IntersectInfo TriangleIntersect(const vector<Triangle>& triangles,
 	mat3 A( -rayDir, e1, e2);
 	vec3 x = glm::inverse(A) * b; // (t u v)
 
-	//cout << "x: (" << x[0] << "	,	" << x[1] << "	,	" << x[2] << ")" << endl;
-	//getchar();
 	// do not update intersection if ray does not intersect triangle
-	if (x[0] <= 0 || x[1] <= 0 || x[2] <= 0 || x[1] + x[2] >= 1)
+	if (x[0] < 0 || x[1] < 0 || x[2] < 0 || x[1] + x[2] > 1)
 		return rayTri;
 
 	rayTri.position = x;
 	rayTri.distance = abs(x[0]);
-	//cout << x[0] << endl;
-	//cout << rayTri.distance << endl;
 	rayTri.triangleIndex = index;
 	return rayTri;
 
-// ALTERNATE IMPLEMENTATION \\
-	// P = O + tR
-	// Ax + By + Cz + D = 0
-	// for(int i = 0; i < triangles.size(); i++) {
-	// 	Ray ray;
-
-	// 	// compute vectors parallel to triangle edges
-	// 	vec3 e0 = triangles[i].v1 - triangles[i].v0;
-	// 	vec3 e1 = triangles[i].v2 - triangles[i].v0;
-
-	// 	// compute distance from scene origin
-	// 	float D = glm::dot(triangles[i].normal, triangles[i].v0);
-
-	// 	float t = - (glm::dot(triangles[i].normal, ray.orig) + D) / glm::dot(triangles[i].normal, ray.dir);
-	// }
 }
 
 bool ClosestIntersection(
@@ -169,27 +147,40 @@ bool ClosestIntersection(
 	const vector<Triangle>& triangles,
 	IntersectInfo& ClosestIntersection) {
 
-	//LoadTestModel(triangles);
-
-	//float maxFloat = std::numeric_limits<float>::max();
-
+	// set default intersect data
 	ClosestIntersection.distance = maxFloat;
 	ClosestIntersection.triangleIndex = -1;
 
 	bool foo = false;
+
+	// check if ray intersects any of the triangles
 	for (int i = 0; i < triangles.size(); i++) {
 		IntersectInfo newIntersection = TriangleIntersect(triangles, i, start, dir);
+
+		//cout << triangles[i].color << endl;
+		//cout << triangles[i].color[0] << "	" << triangles[i].color[1] << "	" << triangles[i].color[2] << endl;
+
+		// set new closest intersection if this triangle is closer than the previous closest
 		if (newIntersection.distance < ClosestIntersection.distance) {
+			vec3 gray = vec3(0.75,0.7385,0.75);
+			bool test = IsEqual(triangles[i].color, gray);
 			ClosestIntersection = newIntersection;
 			foo = true;
 		}
 	}
 
 	if (foo) {
-		cout << "Intersect" << endl;	
+		//cout << "Intersect" << endl;	
 		return true;
 
 	}
+
+	return false;
+}
+
+bool IsEqual(vec3 A, vec3 B) {
+	if (A[0] == B[0] && A[1] == B[1] && A[2] == B[2])
+		return true;
 
 	return false;
 }
