@@ -17,7 +17,7 @@ const int SCREEN_HEIGHT = 500;
 SDL_Surface* screen;
 int t;
 vector<Triangle> triangles;
-int focalLength = 1;//(SCREEN_WIDTH/2) / tan(45/2);
+float focalLength = 1.0;//(SCREEN_WIDTH/2) / tan(45/2);
 vec3 cameraPos(0,0,-focalLength);
 float maxFloat = std::numeric_limits<float>::max();
 
@@ -36,6 +36,7 @@ void Update();
 void Draw();
 void TriangleIntersect();
 bool IsEqual(vec3 A, vec3 B);
+vec3 IntersectPoint(vec3 rayOrig, vec3 rayDir, float t);
 bool ClosestIntersection(vec3 start, vec3 dir, const vector<Triangle>& triangles, IntersectInfo& ClosestIntersection);
 
 int main( int argc, char* argv[] )
@@ -134,7 +135,7 @@ IntersectInfo TriangleIntersect(const vector<Triangle>& triangles,
 	if (x[0] < 0 || x[1] < 0 || x[2] < 0 || x[1] + x[2] > 1)
 		return rayTri;
 
-	rayTri.position = x;
+	rayTri.position = IntersectPoint(rayDir, rayOrig, x[0]);
 	rayTri.distance = abs(x[0]);
 	rayTri.triangleIndex = index;
 	return rayTri;
@@ -148,7 +149,6 @@ bool ClosestIntersection(
 	IntersectInfo& ClosestIntersection) {
 
 	// set default intersect data
-	ClosestIntersection.distance = maxFloat;
 	ClosestIntersection.triangleIndex = -1;
 
 	bool foo = false;
@@ -183,4 +183,13 @@ bool IsEqual(vec3 A, vec3 B) {
 		return true;
 
 	return false;
+}
+
+vec3 IntersectPoint(vec3 rayOrig, vec3 rayDir, float t) {
+	vec3 point(0,0,0);
+	point.x = rayOrig.x + (t * rayDir.x);
+	point.y = rayOrig.y + (t * rayDir.y);
+	point.z = rayOrig.z + (t * rayDir.z);
+
+	return point;
 }
