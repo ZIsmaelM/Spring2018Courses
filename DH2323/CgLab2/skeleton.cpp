@@ -16,12 +16,13 @@ const int SCREEN_WIDTH = 500;
 const int SCREEN_HEIGHT = 500;
 SDL_Surface* screen;
 int t;
-int testx = 0;
-int testy = 0;
 vector<Triangle> triangles;
-float focalLength = 1.0;//(SCREEN_WIDTH/2) / tan(45/2);
-vec3 cameraPos(0,0,-focalLength);
+float focalLength = 1;//(SCREEN_WIDTH/2) / tan(45/2);
+vec3 cameraPos(0,0,0.99);
 float maxFloat = std::numeric_limits<float>::max();
+bool test = true;
+int pixelX;
+int pixelY;
 
 // ----------------------------------------------------------------------------
 // FUNCTIONS
@@ -35,8 +36,8 @@ struct Ray
 struct Intersection
 {
 	vec3 position;
-	float distance = maxFloat;
-	int triangleIndex;
+	float distance;
+	int triIndex;
 };
 
 void Update();
@@ -80,10 +81,13 @@ void Draw()
 
 	// generate triangles
 	LoadTestModel(triangles);
+	// for (int z = 0; z < triangles.size(); z++) {
+	// 	PrintVec3(triangles[z].color);
+	// }
 	for( int y=0; y<SCREEN_HEIGHT; ++y ) {
 		for( int x=0; x<SCREEN_WIDTH; ++x ) {
-			testx = x;
-			testy = y;
+			pixelX = x;
+			pixelY = y;
 			// set ray direction and origin
 			Ray ray;
 			ray.origin = cameraPos;
@@ -97,7 +101,7 @@ void Draw()
 				// cout << "rayOrig: (" << rayOrig.x << "," << rayOrig.y << "," << rayOrig.z << ")" << endl;
 				// cout << "rayDir: (" << rayDir.x << "," << rayDir.y << "," << rayDir.z << ")" << endl;	
 				// cout << "index: " << intersect.triangleIndex << endl;	
-				color = triangles[intersect.triangleIndex].color;
+				color = triangles[intersect.triIndex].color;
 			}
 
 			//vec3 color( 1, 0.5, 0.5 );
@@ -126,7 +130,7 @@ Intersection TriangleIntersect(const vector<Triangle>& triangles, int index, Ray
 
 	Triangle t = triangles[index];
 	Intersection rayTri;
-
+	rayTri.distance = maxFloat;
 	// calculate vectors parallel to triangle edges
 	vec3 e1 = t.v1 - t.v0;
 	vec3 e2 = t.v2 - t.v0;
@@ -139,12 +143,12 @@ Intersection TriangleIntersect(const vector<Triangle>& triangles, int index, Ray
 	vec3 x = glm::inverse(A) * b; // (t u v)
 
 	// do not update intersection if ray does not intersect triangle
-	if (x[0] <= 0 || x[1] <= 0 || x[2] <= 0 || x[1] + x[2] >= 1)
+	if (x[0] < 0 || x[1] < 0 || x[2] < 0 || x[1] + x[2] > 1)
 		return rayTri;
 
 	rayTri.position = ComputeIntersectPoint(ray, x[0]);
-	rayTri.distance = abs(x[0]);
-	rayTri.triangleIndex = index;
+	rayTri.distance = x[0];
+	rayTri.triIndex = index;
 	return rayTri;
 
 }
@@ -166,18 +170,19 @@ Intersection CramerTriIntersection(const vector<Triangle>& triangles, int index,
     // Compute the intersection point using ray.pointOnRay(lambda) 
 
 	Triangle tri = triangles[index];
-	Intersection noIntersect;
+	Intersection intersect;
+	intersect.distance = maxFloat;
 
 	vec3 t1 = tri.v1 - tri.v0;
 	vec3 t2 = tri.v2 - tri.v0;
-	vec3 normal = glm::cross(t1, t2);
+	vec3 normal = glm::normalize(glm::cross(t1, t2));
 
-	double d = glm::dot(ray.direction, normal);
-	//if (fabs(d) < 0.0001) return noIntersect;
+	double d = glm::dot(ray.direction, tri.normal);
+	//if (fabs(d) < 0.0001) return intersect;
 
-	double a = glm::dot((tri.v0 - ray.origin), normal);
+	double a = glm::dot((tri.v0 - ray.origin), tri.normal);
 	double lambda = a / d;
-	//if (lambda < 0 || lambda + 0.0001 > 500) return noIntersect;
+	if (lambda < 0 || lambda + 0.0001 > 500) return intersect;
 
 	vec3 intersectPoint = ComputeIntersectPoint(ray, lambda);
 
@@ -190,62 +195,47 @@ Intersection CramerTriIntersection(const vector<Triangle>& triangles, int index,
 	vec3 intersectionV2 = intersectPoint - tri.v2;
 
 	vec3 C = glm::cross(edge0, intersectionV0);
-	if (glm::dot(normal, C) < 0) return noIntersect;
+	if (glm::dot(normal, C) < 0) return intersect;
 	
 	C = glm::cross(edge1, intersectionV1);
-	if (glm::dot(normal, C) < 0) return noIntersect;
+	if (glm::dot(normal, C) < 0) return intersect;
 
 	C = glm::cross(edge2, intersectionV2);
-	if (glm::dot(normal, C) < 0) return noIntersect;
+	if (glm::dot(normal, C) < 0) return intersect;
 
-	Intersection triIntersect;
-	triIntersect.position = intersectPoint;
-	triIntersect.distance = abs(lambda);
-	triIntersect.triangleIndex = index;
-	return triIntersect;
+	intersect.position = intersectPoint;
+	intersect.distance = lambda;
+	intersect.triIndex = index;
+	return intersect;
 }
 
 bool ClosestIntersection(Ray ray, const vector<Triangle>& triangles, Intersection& ClosestIntersection) {
 
-	// set default intersect data
-	ClosestIntersection.triangleIndex = -1;
+	bool intersectDetected = false;
 
-	bool foo = false;
-
-	Intersection arr[triangles.size()];
+	// Intersection arr[triangles.size()];
 	// check if ray intersects any of the triangles
+	float closestDistance = maxFloat;
+	Intersection newIntersection;
 	for (int i = 0; i < triangles.size(); i++) {
 		//Intersection newIntersection = TriangleIntersect(triangles, i, ray);
-		Intersection newIntersection = CramerTriIntersection(triangles, i, ray);
-		//cout << triangles[i].color << endl;
-		//cout << triangles[i].color[0] << "	" << triangles[i].color[1] << "	" << triangles[i].color[2] << endl;
-
-		// set new closest intersection if this triangle is closer than the previous closest
-		if (newIntersection.distance < ClosestIntersection.distance) {
-			arr[i] = newIntersection;
-			vec3 blue = vec3(0.15,0.15,0.75);
-			bool test = IsEqual(triangles[i].color, blue);
-			if (test)
-				cout << "blue" << endl;
+		if (pixelX == 200 && pixelY == 300) {
+			PrintVec3(triangles[i].color);
+		}
+		newIntersection = TriangleIntersect(triangles, i, ray);
+		
+		float newDist = newIntersection.distance;
+		//cout << newDist << endl;
+		if (newIntersection.distance < closestDistance) {
+			intersectDetected = true;
+			closestDistance = newIntersection.distance;
 			ClosestIntersection = newIntersection;
-			foo = true;
+			if (IsEqual(vec3(0.15,0.15,0.75),triangles[i].color))
+				cout << "blue" << endl;
 		}
 	}
 
-	if (foo) {
-		
-		// if (testx > 200 && testx < 400 && testy > 200 && testy < 400) {
-		// 	for (int i = 0; i < triangles.size(); i++) {
-		// 		cout << "index " << i << ": " << arr[i].distance << endl;
-		// 	}
-		// 	cout << "Best :" << ClosestIntersection.distance << endl;
-		// 	PrintVec3(triangles[ClosestIntersection.triangleIndex].color);
-		// }	
-		return true;
-
-	}
-
-	return false;
+	return intersectDetected;
 }
 
 bool IsEqual(vec3 A, vec3 B) {
