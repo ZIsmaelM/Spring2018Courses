@@ -19,8 +19,8 @@ SDL_Surface* screen;
 int t;
 
 vector<Triangle> triangles;
-int focalLength = 1;
-vec3 cameraPos(0,0,-focalLength);
+float focalLength = SCREEN_HEIGHT/2;
+vec3 cameraPos(0,0,-0.85);
 
 // ----------------------------------------------------------------------------
 // STRUCTS
@@ -61,7 +61,7 @@ int main( int argc, char* argv[] )
 	{
 		Update();
 		Draw();
-		usleep(5000000);	// delay for 5s
+		usleep(51000000);	// delay for 51s
 	}
 
 	SDL_SaveBMP( screen, "screenshot.bmp" );
@@ -84,16 +84,28 @@ void Draw()
 
 	Intersection pixel;
 	Ray ray;
-	ray.orig = cameraPos;
+
+	float fov = 45;
+	float angle = tan(M_PI * 0.5 * fov / 180.); 
 	for( int y=0; y<SCREEN_HEIGHT; ++y )
 	{
 		for( int x=0; x<SCREEN_WIDTH; ++x )
 		{
+			float dirX = (2 * ((x + 0.5) * (1/SCREEN_WIDTH)) - 1) * angle;
+			float dirY = (1 - 2 * ((y + 0.5) * (1/SCREEN_HEIGHT))) * angle; 
+			ray.orig = cameraPos;
+			ray.dir = vec3(x-SCREEN_WIDTH/2, (y-SCREEN_HEIGHT/2), focalLength);
+
 			vec3 color = vec3(0,0,0);
-			ray.dir = vec3(x-SCREEN_WIDTH/2, -(y-SCREEN_HEIGHT/2), focalLength);
 			if(ClosestIntersection(ray, triangles, pixel)) {
-				color = triangles[pixel.index].color;
+				Triangle tri = triangles[pixel.index];
+				color = tri.color;
+
+				// broken af
+				// x = focalLength * (tri.normal.x/tri.normal.z) + (SCREEN_WIDTH/2);
+				// y = focalLength * (tri.normal.y/tri.normal.z) + (SCREEN_HEIGHT/2);
 			}
+
 			PutPixelSDL( screen, x, y, color );
 		}
 	}
