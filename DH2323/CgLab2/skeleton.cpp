@@ -19,8 +19,9 @@ SDL_Surface* screen;
 int t;
 
 vector<Triangle> triangles;
-float focalLength = SCREEN_HEIGHT/2;
-vec3 cameraPos(0,0,-0.85);
+float focalLength = 1;	//SCREEN_HEIGHT/2;
+float alpha = 2 * atan(((float)SCREEN_HEIGHT/2) / (float)SCREEN_WIDTH);	//
+vec3 cameraPos = vec3(0,0,-3);	// -1 to 1 in x,y,z coords
 
 // ----------------------------------------------------------------------------
 // STRUCTS
@@ -61,6 +62,7 @@ int main( int argc, char* argv[] )
 	{
 		Update();
 		Draw();
+		cout << "Finished Rendering" << endl;
 		usleep(51000000);	// delay for 51s
 	}
 
@@ -85,14 +87,14 @@ void Draw()
 	Intersection pixel;
 	Ray ray;
 
-	float fov = 45;
-	float angle = tan(M_PI * 0.5 * fov / 180.); 
+	focalLength = SCREEN_HEIGHT / (2 * tan(alpha/2));
+	cout << alpha << endl;
 	for( int y=0; y<SCREEN_HEIGHT; ++y )
 	{
 		for( int x=0; x<SCREEN_WIDTH; ++x )
 		{
-			float dirX = (2 * ((x + 0.5) * (1/SCREEN_WIDTH)) - 1) * angle;
-			float dirY = (1 - 2 * ((y + 0.5) * (1/SCREEN_HEIGHT))) * angle; 
+			// float dirX = (2 * ((x + 0.5) * (1/SCREEN_WIDTH)) - 1) * angle;
+			// float dirY = (1 - 2 * ((y + 0.5) * (1/SCREEN_HEIGHT))) * angle; 
 			ray.orig = cameraPos;
 			ray.dir = vec3(x-SCREEN_WIDTH/2, (y-SCREEN_HEIGHT/2), focalLength);
 
