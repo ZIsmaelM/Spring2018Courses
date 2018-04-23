@@ -13,15 +13,26 @@ using glm::mat3;
 // ----------------------------------------------------------------------------
 // GLOBAL VARIABLES
 
-const int SCREEN_WIDTH = 500;
-const int SCREEN_HEIGHT = 500;
+const int SCREEN_WIDTH = 100;
+const int SCREEN_HEIGHT = 100;
 SDL_Surface* screen;
 int t;
 
 vector<Triangle> triangles;
-float focalLength = 1;	//SCREEN_HEIGHT/2;
-float alpha = 2 * atan(((float)SCREEN_HEIGHT/2) / (float)SCREEN_WIDTH);	//
-vec3 cameraPos = vec3(0,0,-3);	// -1 to 1 in x,y,z coords
+float focalLength;
+float alpha = 2 * atan(((float)SCREEN_HEIGHT/2) / (float)SCREEN_WIDTH);
+
+float speed = 0.1;
+float yaw = 0;
+vec3 r1 = vec3(cos(yaw),0,sin(yaw));
+vec3 r2 = vec3(0,1,0);
+vec3 r3 = vec3(-sin(yaw),0,cos(yaw));
+//mat3 R = (r1,r2,r3);
+
+float camX = 0;
+float camY = 0;
+float camZ = -3;
+vec3 cameraPos = vec3(camX,camY,camZ);	// -1 to 1 in x,y,z coords
 
 // ----------------------------------------------------------------------------
 // STRUCTS
@@ -52,6 +63,13 @@ float ComputeDistance(vec3 v, vec3 u) {
 	return float(sqrt(a + b + c));
 }
 
+float Rotation() {
+	r1 = vec3(cos(yaw),0,sin(yaw));
+	r2 = vec3(0,1,0);
+	r3 = vec3(-sin(yaw),0,cos(yaw));
+	//R = (r1,r2,r3);
+}
+
 int main( int argc, char* argv[] )
 {
 	screen = InitializeSDL( SCREEN_WIDTH, SCREEN_HEIGHT );
@@ -63,7 +81,7 @@ int main( int argc, char* argv[] )
 		Update();
 		Draw();
 		cout << "Finished Rendering" << endl;
-		usleep(51000000);	// delay for 51s
+		//usleep(51000000);	// delay for 51s
 	}
 
 	SDL_SaveBMP( screen, "screenshot.bmp" );
@@ -77,6 +95,30 @@ void Update()
 	float dt = float(t2-t);
 	t = t2;
 	cout << "Render time: " << dt << " ms." << endl;
+
+	Uint8* keystate = SDL_GetKeyState( 0 );
+	if( keystate[SDLK_UP] ) {
+		// Move camera forward
+		camZ += speed;
+		cameraPos = vec3(camX,camY,camZ);
+	}
+	if( keystate[SDLK_DOWN] ) {
+		// Move camera backward
+		camZ -= speed;
+		cameraPos = vec3(camX,camY,camZ);
+	}
+	if( keystate[SDLK_LEFT] ) {
+		// Move camera to the left
+		camX -= speed;
+		yaw -= speed;
+
+		cameraPos = vec3(camX,camY,camZ);
+	}
+	if( keystate[SDLK_RIGHT] ) {
+		// Move camera to the right
+		camX += speed;
+		cameraPos = vec3(camX,camY,camZ);
+	}
 }
 
 void Draw()
@@ -88,13 +130,10 @@ void Draw()
 	Ray ray;
 
 	focalLength = SCREEN_HEIGHT / (2 * tan(alpha/2));
-	cout << alpha << endl;
 	for( int y=0; y<SCREEN_HEIGHT; ++y )
 	{
 		for( int x=0; x<SCREEN_WIDTH; ++x )
 		{
-			// float dirX = (2 * ((x + 0.5) * (1/SCREEN_WIDTH)) - 1) * angle;
-			// float dirY = (1 - 2 * ((y + 0.5) * (1/SCREEN_HEIGHT))) * angle; 
 			ray.orig = cameraPos;
 			ray.dir = vec3(x-SCREEN_WIDTH/2, (y-SCREEN_HEIGHT/2), focalLength);
 
@@ -102,10 +141,6 @@ void Draw()
 			if(ClosestIntersection(ray, triangles, pixel)) {
 				Triangle tri = triangles[pixel.index];
 				color = tri.color;
-
-				// broken af
-				// x = focalLength * (tri.normal.x/tri.normal.z) + (SCREEN_WIDTH/2);
-				// y = focalLength * (tri.normal.y/tri.normal.z) + (SCREEN_HEIGHT/2);
 			}
 
 			PutPixelSDL( screen, x, y, color );
