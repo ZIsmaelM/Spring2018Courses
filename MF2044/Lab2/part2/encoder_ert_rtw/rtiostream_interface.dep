@@ -1,0 +1,23 @@
+rtiostream_interface.o: \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/rtiostream_interface.c \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/updown_util.h \
+ E:/MF2044/Lab2/part2/encoder_ert_rtw/rtwtypes.h \
+ C:/PROGRA~1/MATLAB/R2017a/simulink/include/rtw_extmode.h \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/rtiostream.h \
+ C:/PROGRA~1/MATLAB/R2017a/toolbox/coder/rtiostream/src/utils/rtiostream_utils.h \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_types.h \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_share.h
+
+C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/updown_util.h:
+
+E:/MF2044/Lab2/part2/encoder_ert_rtw/rtwtypes.h:
+
+C:/PROGRA~1/MATLAB/R2017a/simulink/include/rtw_extmode.h:
+
+C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/rtiostream.h:
+
+C:/PROGRA~1/MATLAB/R2017a/toolbox/coder/rtiostream/src/utils/rtiostream_utils.h:
+
+C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_types.h:
+
+C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_share.h:

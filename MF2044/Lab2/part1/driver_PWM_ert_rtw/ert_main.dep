@@ -1,0 +1,69 @@
+ert_main.o: ert_main.c driver_PWM.h rtwtypes.h \
+ C:/PROGRA~1/MATLAB/R2017a/simulink/include/rtw_extmode.h \
+ C:/PROGRA~1/MATLAB/R2017a/simulink/include/sysran_types.h \
+ C:/PROGRA~1/MATLAB/R2017a/simulink/include/rtw_continuous.h \
+ E:/MF2044/Lab2/driver_PWM_ert_rtw/rtwtypes.h \
+ C:/PROGRA~1/MATLAB/R2017a/simulink/include/rtw_solver.h \
+ C:/PROGRA~1/MATLAB/R2017a/simulink/include/rtw_continuous.h \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/dt_info.h \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_work.h \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_types.h \
+ driver_PWM_types.h multiword_types.h MW_target_hardware_resources.h \
+ C:/ProgramData/MATLAB/SupportPackages/R2017a/toolbox/target/supportpackages/arduinotarget/scheduler/include/arduinoAVRScheduler.h \
+ C:/ProgramData/MATLAB/SupportPackages/R2017a/3P.instrset/arduinoide.instrset/arduino-1.6.13/hardware/arduino/avr/cores/arduino/Arduino.h \
+ C:/ProgramData/MATLAB/SupportPackages/R2017a/3P.instrset/arduinoide.instrset/arduino-1.6.13/hardware/arduino/avr/cores/arduino/binary.h \
+ C:/ProgramData/MATLAB/SupportPackages/R2017a/3P.instrset/arduinoide.instrset/arduino-1.6.13/hardware/arduino/avr/variants/mega/pins_arduino.h \
+ C:/ProgramData/MATLAB/SupportPackages/R2017a/toolbox/target/supportpackages/arduinotarget/include/MW_ArduinoHWInit.h \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_svr.h \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_share.h \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_share.h \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/updown.h \
+ C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/upsup_public.h
+
+driver_PWM.h:
+
+rtwtypes.h:
+
+C:/PROGRA~1/MATLAB/R2017a/simulink/include/rtw_extmode.h:
+
+C:/PROGRA~1/MATLAB/R2017a/simulink/include/sysran_types.h:
+
+C:/PROGRA~1/MATLAB/R2017a/simulink/include/rtw_continuous.h:
+
+E:/MF2044/Lab2/driver_PWM_ert_rtw/rtwtypes.h:
+
+C:/PROGRA~1/MATLAB/R2017a/simulink/include/rtw_solver.h:
+
+C:/PROGRA~1/MATLAB/R2017a/simulink/include/rtw_continuous.h:
+
+C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/dt_info.h:
+
+C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_work.h:
+
+C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_types.h:
+
+driver_PWM_types.h:
+
+multiword_types.h:
+
+MW_target_hardware_resources.h:
+
+C:/ProgramData/MATLAB/SupportPackages/R2017a/toolbox/target/supportpackages/arduinotarget/scheduler/include/arduinoAVRScheduler.h:
+
+C:/ProgramData/MATLAB/SupportPackages/R2017a/3P.instrset/arduinoide.instrset/arduino-1.6.13/hardware/arduino/avr/cores/arduino/Arduino.h:
+
+C:/ProgramData/MATLAB/SupportPackages/R2017a/3P.instrset/arduinoide.instrset/arduino-1.6.13/hardware/arduino/avr/cores/arduino/binary.h:
+
+C:/ProgramData/MATLAB/SupportPackages/R2017a/3P.instrset/arduinoide.instrset/arduino-1.6.13/hardware/arduino/avr/variants/mega/pins_arduino.h:
+
+C:/ProgramData/MATLAB/SupportPackages/R2017a/toolbox/target/supportpackages/arduinotarget/include/MW_ArduinoHWInit.h:
+
+C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_svr.h:
+
+C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_share.h:
+
+C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/ext_share.h:
+
+C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/updown.h:
+
+C:/PROGRA~1/MATLAB/R2017a/rtw/c/src/ext_mode/common/upsup_public.h:
