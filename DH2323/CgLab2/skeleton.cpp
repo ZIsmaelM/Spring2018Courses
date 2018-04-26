@@ -63,7 +63,7 @@ void Update();
 void Draw();
 bool ClosestIntersection(Ray ray, const vector<Triangle>& triangles, Intersection& closestIntersection);
 vec3 DirectLight(const Intersection& i);
-float CalculateDistance(vec3 a, vec3 b);
+vec3 CalculateUnitVec3(vec3 a);
 
 float ComputeDistance(vec3 v, vec3 u) {
 	float a = pow(u[0]-v[0],2);
@@ -159,12 +159,13 @@ void Draw()
 		{
 			ray.orig = cameraPos;
 			ray.dir = camRight + camForward + vec3(x-SCREEN_WIDTH/2, (y-SCREEN_HEIGHT/2), focalLength);
+			//ray.dir = glm::normalize(ray.dir);
 
 			vec3 color = vec3(0,0,0);
 			if(ClosestIntersection(ray, triangles, pixel)) {
 				Triangle tri = triangles[pixel.index];
 				vec3 light = DirectLight(pixel);
-				color = light;//tri.color;
+				color = light*tri.color;//tri.color;
 			}
 
 			PutPixelSDL( screen, x, y, color );
@@ -213,18 +214,25 @@ bool ClosestIntersection(Ray ray, const vector<Triangle>& triangles, Intersectio
 vec3 DirectLight(const Intersection& i) {
 
 	Triangle t = triangles[i.index];
-	float r = CalculateDistance(lightPos,i.pos);
+	float r = ComputeDistance(lightPos,i.pos);
 	float A = 4*M_PI*pow(r,2);
-
 	vec3 B = lightColor / A;
-	// B[0] = lightColor[0] / A;
-	// B[1] = lightColor[1] / A;
-	// B[2] = lightColor[2] / A;
 
-	vec3 D = vec3(0,0,0);
-	D[0] = B[0]*std::max(t.normal[0],0.0f);
-	D[1] = B[1]*std::max(t.normal[1],0.0f);
-	D[2] = B[2]*std::max(t.normal[2],0.0f);
+	Ray shadowRay;
+	shadowRay.orig = i.pos;
+	shadowRay.dir = lightPos;
+
+	vec3 unitVecNorm = CalculateUnitVec3(t.normal);
+	vec3 surfaceToLight = CalculateUnitVec3(shadowRay.dir-shadowRay.orig);
+	float unitVec = std::max(0.f, glm::dot(unitVecNorm,surfaceToLight));
+
+	Intersection objectIntersect;
+	if (ClosestIntersection(shadowRay, triangles, objectIntersect)) {
+		if(objectIntersect.dist < r)
+			return vec3(0,0,0);
+	}
+
+	vec3 D = B*unitVec;
 
 	return D;
 }
@@ -243,10 +251,9 @@ void InterpolateVec3( vec3 a, vec3 b, vector<vec3>& result) {
 	}
 }
 
-float CalculateDistance(vec3 a, vec3 b) {
-	float x = b[0] - a[0];
-	float y = b[1] - a[1];
-	float z = b[2] - a[2];
+vec3 CalculateUnitVec3(vec3 a) {
+	float denom = sqrt(pow(a[0],2)+pow(a[1],2)+pow(a[2],2));
+	vec3 result = vec3(a[0]/denom, a[1]/denom, a[2]/denom);
 
-	return sqrt(pow(x,2)+pow(y,2)+pow(z,2));
+	return result;
 }
