@@ -64,6 +64,7 @@ void Update();
 void Draw();
 bool ClosestIntersection(Ray ray, const vector<Triangle>& triangles, Intersection& closestIntersection);
 vec3 DirectLight(const Intersection& i);
+vec3 DirectLightOther(const Intersection& i);
 
 float ComputeDistance(vec3 v, vec3 u) {
 	float a = pow(u[0]-v[0],2);
@@ -164,7 +165,7 @@ void Draw()
 			vec3 color = vec3(0,0,0);
 			if(ClosestIntersection(ray, triangles, pixel)) {
 				Triangle tri = triangles[pixel.index];
-				vec3 light = DirectLight(pixel);
+				vec3 light = DirectLightOther(pixel);
 				color = (light+indirectLight)*tri.color;//tri.color;
 			}
 
@@ -211,58 +212,80 @@ bool ClosestIntersection(Ray ray, const vector<Triangle>& triangles, Intersectio
 	return intersectDetected;
 }
 
-vec3 DirectLight(const Intersection& i) {
+int iii = 10;
+vec3 DirectLightOther(const Intersection& i) {
 
 	vec3 normal = triangles[i.index].normal;
-		vec3 r = i.pos - lightPos;
+	vec3 r = lightPos - i.pos;
 
-		Ray testRay;
-		testRay.orig = lightPos;
-		testRay.dir = glm::normalize(r);
+	Ray testRay;
+	testRay.orig = lightPos;
+	testRay.dir = glm::normalize(r);
 
-		float d = sqrt(r.x*r.x + r.y*r.y + r.z*r.z);
-		float P;
-		if (glm::dot(normal, r) < 0) {
-			
-			Intersection sh;
-			bool a = ClosestIntersection(testRay, triangles, sh);
-			if (a) {
-				if (sh.dist + 0.001<= d) {
-					P = 0;// (0.5 / (4.f* 3.14*d*d));
+	float rr = ComputeDistance(lightPos,i.pos);
+	float A = 4*M_PI*pow(rr,2);
+	vec3 B = vec3(0,0,0);	//lightColor / A;
+
+	float unitVec = glm::dot(glm::normalize(normal),testRay.dir);
+
+	float d = rr;	//sqrt(r.x*r.x + r.y*r.y + r.z*r.z);
+	float P = (1.f / (4.f* M_PI*d*d));
+
+
+	//vec3 D = B*unitVec;
+	// if (unitVec < 0) {
+		
+		Intersection sh;
+		bool a = ClosestIntersection(testRay, triangles, sh);
+		if (a) {
+			if (sh.dist + 0.001<= d) {
+				if (iii > 0) {
+					cout << sh.dist << endl;
+					iii--;
 				}
-				else{  
-					P = (1.f / (4.f* 3.14*d*d));
-				}
+				P = 0;// (0.5 / (4.f* 3.14*d*d));
+				B = vec3(0,0,0);
 			}
-			else{
+			else{  
 				P = (1.f / (4.f* 3.14*d*d));
+				B = lightColor / A;
 			}
-			vec3 light = P * lightColor;
-			return light;
 		}
+		else{
+			P = (1.f / (4.f* 3.14*d*d));
+			B = lightColor / A;
+		}
+		vec3 light = P * lightColor * unitVec;
+		return light;
+	// }
+
+	// vec3 light = P * lightColor;
 	return vec3(0, 0, 0);
+}
 
-	// float tShadow = 0.001f;
+vec3 DirectLight(const Intersection& i) {
 
-	// Triangle t = triangles[i.index];
-	// float r = ComputeDistance(lightPos,i.pos);
-	// float A = 4*M_PI*pow(r,2);
-	// vec3 B = lightColor / A;
+	float tShadow = 0.001f;
+
+	Triangle t = triangles[i.index];
+	float r = ComputeDistance(lightPos,i.pos);
+	float A = 4*M_PI*pow(r,2);
+	vec3 B = lightColor / A;
 
 	
-	// vec3 offset(tShadow,tShadow,tShadow);
-	// Ray shadowRay;
-	// shadowRay.orig = i.pos;
-	// shadowRay.dir = lightPos - i.pos + tShadow;
-	// //shadowRay.dir = glm::normalize(shadowRay.dir);
+	vec3 offset(tShadow,tShadow,tShadow);
+	Ray shadowRay;
+	shadowRay.orig = i.pos;
+	shadowRay.dir = i.pos - lightPos;
+	//shadowRay.dir = glm::normalize(shadowRay.dir);
 
-	// vec3 unitVecNorm = glm::normalize(t.normal);
-	// vec3 rXn = unitVecNorm*shadowRay.dir;
-	// float a = std::max(rXn[0],rXn[1]);
-	// float r_n = std::max(a,rXn[2]);
-	// //float r_n = (rXn[0]+rXn[1]+rXn[2])/3;	// nice lighting results
-	// //float unitVec = std::max(0.f, r_n);
-	// float unitVec = glm::dot(t.normal,shadowRay.dir);
+	vec3 unitVecNorm = glm::normalize(t.normal);
+	vec3 rXn = unitVecNorm*shadowRay.dir;
+	float a = std::max(rXn[0],rXn[1]);
+	float r_n = std::max(a,rXn[2]);
+	//float r_n = (rXn[0]+rXn[1]+rXn[2])/3;	// nice lighting results
+	//float unitVec = std::max(0.f, r_n);
+	float unitVec = glm::dot(t.normal,shadowRay.dir);
 
 	// shadowRay.dir = glm::normalize(shadowRay.dir);
 	// Intersection objectIntersect;
@@ -274,9 +297,9 @@ vec3 DirectLight(const Intersection& i) {
 	// 		return vec3(0,0,0);
 	// }
 
-	// vec3 D = B*unitVec;
+	vec3 D = B*unitVec;
 
-	// return D;
+	return D;
 }
 
 void InterpolateVec3( vec3 a, vec3 b, vector<vec3>& result) {
