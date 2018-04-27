@@ -63,7 +63,6 @@ void Update();
 void Draw();
 bool ClosestIntersection(Ray ray, const vector<Triangle>& triangles, Intersection& closestIntersection);
 vec3 DirectLight(const Intersection& i);
-vec3 CalculateUnitVec3(vec3 a);
 
 float ComputeDistance(vec3 v, vec3 u) {
 	float a = pow(u[0]-v[0],2);
@@ -92,7 +91,7 @@ int main( int argc, char* argv[] )
 		Update();
 		Draw();
 		cout << "Finished Rendering" << endl;
-		//usleep(51000000);	// delay for 51s
+		usleep(51000000);	// delay for 51s
 	}
 
 	SDL_SaveBMP( screen, "screenshot.bmp" );
@@ -159,7 +158,7 @@ void Draw()
 		{
 			ray.orig = cameraPos;
 			ray.dir = camRight + camForward + vec3(x-SCREEN_WIDTH/2, (y-SCREEN_HEIGHT/2), focalLength);
-			//ray.dir = glm::normalize(ray.dir);
+			ray.dir = glm::normalize(ray.dir);
 
 			vec3 color = vec3(0,0,0);
 			if(ClosestIntersection(ray, triangles, pixel)) {
@@ -213,22 +212,32 @@ bool ClosestIntersection(Ray ray, const vector<Triangle>& triangles, Intersectio
 
 vec3 DirectLight(const Intersection& i) {
 
+	float tShadow = 0.000001f;
+
 	Triangle t = triangles[i.index];
 	float r = ComputeDistance(lightPos,i.pos);
 	float A = 4*M_PI*pow(r,2);
 	vec3 B = lightColor / A;
 
+	
+	vec3 offset(tShadow,tShadow,tShadow);
 	Ray shadowRay;
 	shadowRay.orig = i.pos;
-	shadowRay.dir = lightPos;
+	shadowRay.dir = lightPos - i.pos;
+	shadowRay.dir = glm::normalize(shadowRay.dir);
 
-	vec3 unitVecNorm = CalculateUnitVec3(t.normal);
-	vec3 surfaceToLight = CalculateUnitVec3(shadowRay.dir-shadowRay.orig);
-	float unitVec = std::max(0.f, glm::dot(unitVecNorm,surfaceToLight));
+	vec3 unitVecNorm = glm::normalize(t.normal);
+	// vec3 surfaceToLight = glm::normalize(shadowRay.dir);
+	vec3 rXn = unitVecNorm*shadowRay.dir;
+	float a = std::max(rXn[0],rXn[1]);
+	float r_n = std::max(a,rXn[2]);
+	//float r_n = (rXn[0]+rXn[1]+rXn[2])/3;	// nice lighting results
+	float unitVec = std::max(0.f, r_n);
 
 	Intersection objectIntersect;
 	if (ClosestIntersection(shadowRay, triangles, objectIntersect)) {
-		if(objectIntersect.dist < r)
+		float foo = ComputeDistance(objectIntersect.pos, lightPos);
+		if(objectIntersect.dist < r && objectIntersect.dist > 0)
 			return vec3(0,0,0);
 	}
 
@@ -249,11 +258,4 @@ void InterpolateVec3( vec3 a, vec3 b, vector<vec3>& result) {
 			result[i][j] = a[j] + t;
 		}
 	}
-}
-
-vec3 CalculateUnitVec3(vec3 a) {
-	float denom = sqrt(pow(a[0],2)+pow(a[1],2)+pow(a[2],2));
-	vec3 result = vec3(a[0]/denom, a[1]/denom, a[2]/denom);
-
-	return result;
 }
