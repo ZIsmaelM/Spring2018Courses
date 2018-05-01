@@ -42,7 +42,7 @@ vec3 camForward;
 //light
 vec3 lightPos(0,-0.5,-0.7);
 vec3 lightColor = 14.f * vec3(1,1,1);
-vec3 indirectLight = vec3(0,0,0);//0.5f*vec3( 1, 1, 1 );
+vec3 indirectLight = 0.5f*vec3( 1, 1, 1 );
 // ----------------------------------------------------------------------------
 // STRUCTS
 
@@ -165,7 +165,7 @@ void Draw()
 			vec3 color = vec3(0,0,0);
 			if(ClosestIntersection(ray, triangles, pixel)) {
 				Triangle tri = triangles[pixel.index];
-				vec3 light = DirectLightOther(pixel);
+				vec3 light = DirectLight(pixel);
 				color = (light+indirectLight)*tri.color;//tri.color;
 			}
 
@@ -212,91 +212,39 @@ bool ClosestIntersection(Ray ray, const vector<Triangle>& triangles, Intersectio
 	return intersectDetected;
 }
 
-int iii = 10;
-vec3 DirectLightOther(const Intersection& i) {
-
-	vec3 normal = triangles[i.index].normal;
-	vec3 r = lightPos - i.pos;
-
-	Ray testRay;
-	testRay.orig = lightPos;
-	testRay.dir = glm::normalize(r);
-
-	float rr = ComputeDistance(lightPos,i.pos);
-	float A = 4*M_PI*pow(rr,2);
-	vec3 B = vec3(0,0,0);	//lightColor / A;
-
-	float unitVec = glm::dot(glm::normalize(normal),testRay.dir);
-
-	float d = rr;	//sqrt(r.x*r.x + r.y*r.y + r.z*r.z);
-	float P = (1.f / (4.f* M_PI*d*d));
-
-
-	//vec3 D = B*unitVec;
-	// if (unitVec < 0) {
-		
-		Intersection sh;
-		bool a = ClosestIntersection(testRay, triangles, sh);
-		if (a) {
-			if (sh.dist + 0.001<= d) {
-				if (iii > 0) {
-					cout << sh.dist << endl;
-					iii--;
-				}
-				P = 0;// (0.5 / (4.f* 3.14*d*d));
-				B = vec3(0,0,0);
-			}
-			else{  
-				P = (1.f / (4.f* 3.14*d*d));
-				B = lightColor / A;
-			}
-		}
-		else{
-			P = (1.f / (4.f* 3.14*d*d));
-			B = lightColor / A;
-		}
-		vec3 light = P * lightColor * unitVec;
-		return light;
-	// }
-
-	// vec3 light = P * lightColor;
-	return vec3(0, 0, 0);
-}
-
 vec3 DirectLight(const Intersection& i) {
 
 	float tShadow = 0.001f;
 
 	Triangle t = triangles[i.index];
-	float r = ComputeDistance(lightPos,i.pos);
+	float r = ComputeDistance(i.pos,lightPos);
 	float A = 4*M_PI*pow(r,2);
-	vec3 B = lightColor / A;
-
 	
-	vec3 offset(tShadow,tShadow,tShadow);
+	vec3 B = lightColor / A;
+	
 	Ray shadowRay;
-	shadowRay.orig = i.pos;
-	shadowRay.dir = i.pos - lightPos;
-	//shadowRay.dir = glm::normalize(shadowRay.dir);
+	// Set the ray origin
+	if (i.pos[0] - tShadow <= -1 || i.pos[1] - tShadow <= -1)
+		shadowRay.orig = i.pos + tShadow;
+	else
+		shadowRay.orig = i.pos - tShadow;
 
-	vec3 unitVecNorm = glm::normalize(t.normal);
-	vec3 rXn = unitVecNorm*shadowRay.dir;
-	float a = std::max(rXn[0],rXn[1]);
-	float r_n = std::max(a,rXn[2]);
+	shadowRay.dir = lightPos - shadowRay.orig;
+	shadowRay.dir = glm::normalize(shadowRay.dir);
+
+	//vec3 rXn = t.normal*shadowRay.dir;
+	//float a = std::max(rXn[0],rXn[1]);
+	//float r_n = std::max(a,rXn[2]);
 	//float r_n = (rXn[0]+rXn[1]+rXn[2])/3;	// nice lighting results
 	//float unitVec = std::max(0.f, r_n);
-	float unitVec = glm::dot(t.normal,shadowRay.dir);
+	
+	float unitVec = std::max(0.f,glm::dot(t.normal,shadowRay.dir));
 
-	// shadowRay.dir = glm::normalize(shadowRay.dir);
-	// Intersection objectIntersect;
-	// if (ClosestIntersection(shadowRay, triangles, objectIntersect)) {
-	// 	//float foo = ComputeDistance(objectIntersect.pos, lightPos);
-	// 	float ggg = objectIntersect.dist;//+tShadow;
-	// 	// if(objectIntersect.dist < r && objectIntersect.dist > 0)
-	// 	if(ggg < r)
-	// 		return vec3(0,0,0);
-	// }
-
+	Intersection objectIntersect;
+	if (ClosestIntersection(shadowRay, triangles, objectIntersect)) {
+		if(objectIntersect.dist < r)
+			return vec3(0,0,0);
+	}
 	vec3 D = B*unitVec;
 
 	return D;
