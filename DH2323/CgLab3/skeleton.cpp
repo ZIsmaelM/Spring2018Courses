@@ -18,11 +18,16 @@ SDL_Surface* screen;
 int t;
 vector<Triangle> triangles;
 
+float focalLength;
+float alpha = 2 * atan(((float)SCREEN_HEIGHT/2) / (float)SCREEN_WIDTH);
+vec3 cameraPos(0,0,-3.001);
 // ----------------------------------------------------------------------------
 // FUNCTIONS
 
 void Update();
 void Draw();
+void VertexShader(const vec3&, ivec2&);
+void DrawPolygonEdges(const vector<vec3>&);
 
 int main( int argc, char* argv[] )
 {
@@ -94,6 +99,7 @@ void Draw()
 	if( SDL_MUSTLOCK(screen) )
 		SDL_LockSurface(screen);
 	
+	focalLength = SCREEN_HEIGHT / (2 * tan(alpha/2));
 	for( int i=0; i<triangles.size(); ++i )
 	{
 		vector<vec3> vertices(3);
@@ -102,11 +108,73 @@ void Draw()
 		vertices[1] = triangles[i].v1;
 		vertices[2] = triangles[i].v2;
 
-		// Add drawing
+		// Draw edges
+		DrawPolygonEdges(vertices);
+
+		// // Draw vertices
+		// for(int v = 0; v < 3; ++v) {
+		// 	ivec2 projPos;
+		// 	VertexShader(vertices[v], projPos);
+		// 	vec3 color(1,1,1);
+		// 	PutPixelSDL(screen, projPos.x, projPos.y, color);
+		// }
 	}
 	
 	if ( SDL_MUSTLOCK(screen) )
 		SDL_UnlockSurface(screen);
 
 	SDL_UpdateRect( screen, 0, 0, 0, 0 );
+}
+
+void VertexShader(const vec3& v, ivec2& p) {
+
+	vec3 picturePlane;
+	picturePlane.x = v.x - cameraPos.x;
+	picturePlane.y = v.y - cameraPos.y;
+	picturePlane.z = v.z - cameraPos.z;
+
+	p.x = focalLength * (picturePlane.x / picturePlane.z) + (SCREEN_WIDTH/2);
+	p.y = focalLength * (picturePlane.y / picturePlane.z) + (SCREEN_HEIGHT/2);
+}
+
+void Interpolate( ivec2 a, ivec2 b, vector<ivec2>& result) {
+	int numSamples = result.size();
+	int numPoints = 2;
+
+	int dist;
+	for (int i = 0; i < numSamples; ++i) {
+		for (int j = 0; j < numPoints; ++j) {
+			float dist = b[j] - a[j];
+			float t = ((float)i/(numSamples-1)) * dist;
+			result[i][j] = a[j] + t;
+		}
+	}
+}
+
+void DrawLineSDL(SDL_Surface* surface, ivec2 a, ivec2 b, vec3 color) {
+	
+	ivec2 delta = glm::abs(a-b);
+	int pixels = glm::max(delta.x, delta.y) + 1;
+	vector<ivec2> line(pixels);
+	Interpolate(a,b,line);
+	for(int i=0; i<line.size(); ++i) {
+		PutPixelSDL(surface, line[i].x, line[i].y, color);
+	}
+}
+
+void DrawPolygonEdges(const vector<vec3>& vertices) {
+	int V = vertices.size();
+	// Transform each vertex from 3D world position to 2D image position
+	vector<ivec2> projectedVertices(V);
+	for(int i=0; i<V; ++i) {
+		VertexShader(vertices[i], projectedVertices[i]);
+	}
+
+	// Loop over all vertices and draw the edge from it to the next vertex
+	for(int i=0; i<V; ++i) {
+		int j = (i+1)%V; // The next vertex
+		vec3 color(1,1,1);
+		DrawLineSDL(screen, projectedVertices[i], projectedVertices[j], color);
+
+	}
 }
