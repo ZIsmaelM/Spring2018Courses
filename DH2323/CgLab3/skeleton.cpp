@@ -21,6 +21,16 @@ vector<Triangle> triangles;
 float focalLength;
 float alpha = 2 * atan(((float)SCREEN_HEIGHT/2) / (float)SCREEN_WIDTH);
 vec3 cameraPos(0,0,-3.001);
+vec3 cameraOrig = cameraPos;
+
+mat3 R;
+float yaw = M_PI/256;
+int axis = 0;
+float degreeH = 0;
+float degreeV = 0;
+vec3 rotRight = vec3(cos(degreeH), 0, sin(degreeH));
+vec3 rotDown = vec3(0, 1, 0);
+vec3 rotForward = vec3(-sin(degreeH), 0, cos(degreeH));
 // ----------------------------------------------------------------------------
 // FUNCTIONS
 
@@ -45,6 +55,25 @@ int main( int argc, char* argv[] )
 	return 0;
 }
 
+void Rotate(vec3& v) {
+	// testAngle += yaw;
+	if (axis == 0) {
+		rotRight = vec3(1, 0, 0);
+		rotDown = vec3(0, cos(degreeV), -sin(degreeV));
+		rotForward = vec3(0, sin(degreeV), cos(degreeV));
+	} else {
+		rotRight = vec3(cos(degreeH), 0, sin(degreeH));
+		rotDown = vec3(0, 1, 0);
+		rotForward = vec3(-sin(degreeH), 0, cos(degreeH));
+	}
+
+	float rotX = glm::dot(rotRight, v);
+	float rotY = glm::dot(rotDown, v);
+	float rotZ = glm::dot(rotForward, v);
+
+	v = vec3(rotX, rotY, rotZ);
+}
+
 void Update()
 {
 	// Compute frame time:
@@ -55,17 +84,32 @@ void Update()
 
 	Uint8* keystate = SDL_GetKeyState(0);
 
-	if( keystate[SDLK_UP] )
-		;
+	if( keystate[SDLK_UP] ) {
+		degreeV += yaw;
+		axis = 0;
+		cameraPos = cameraOrig;
+		Rotate(cameraPos);
+	}
+	if( keystate[SDLK_DOWN] ) {
+		degreeV -= yaw;
+		axis = 0;
+		cameraPos = cameraOrig;
+		Rotate(cameraPos);
+	}
 
-	if( keystate[SDLK_DOWN] )
-		;
+	if( keystate[SDLK_RIGHT] ) {
+		degreeH += yaw;
+		axis = 1;
+		cameraPos = cameraOrig;
+		Rotate(cameraPos);
+	}
 
-	if( keystate[SDLK_RIGHT] )
-		;
-
-	if( keystate[SDLK_LEFT] )
-		;
+	if( keystate[SDLK_LEFT] ) {
+		degreeH -= yaw;
+		axis = 1;
+		cameraPos = cameraOrig;
+		Rotate(cameraPos);
+	}
 
 	if( keystate[SDLK_RSHIFT] )
 		;
@@ -73,23 +117,28 @@ void Update()
 	if( keystate[SDLK_RCTRL] )
 		;
 
-	if( keystate[SDLK_w] )
-		;
-
-	if( keystate[SDLK_s] )
-		;
-
-	if( keystate[SDLK_d] )
-		;
-
-	if( keystate[SDLK_a] )
-		;
-
-	if( keystate[SDLK_e] )
-		;
-
-	if( keystate[SDLK_q] )
-		;
+	// //Light source movement
+	// float lightSpeed = 0.1;
+	// if( keystate[SDLK_w] ) {
+	// 	lightPos.z += lightSpeed;
+	// }
+	// if( keystate[SDLK_s] ) {
+	// 	lightPos.z -= lightSpeed;
+	// }
+	// if( keystate[SDLK_a] ) {
+	// 	lightPos.x -= lightSpeed;
+	// }
+	// if( keystate[SDLK_d] ) {
+	// 	lightPos.x += lightSpeed;
+	// }
+	// if( keystate[SDLK_q] ) {
+	// 	lightPos.y -= lightSpeed;
+	// }
+	// if( keystate[SDLK_e] ) {
+	// 	lightPos.y += lightSpeed;
+	// }
+	// cameraPos = cameraOrig;
+	// Rotate(cameraPos);
 }
 
 void Draw()
@@ -103,6 +152,10 @@ void Draw()
 	for( int i=0; i<triangles.size(); ++i )
 	{
 		vector<vec3> vertices(3);
+
+		// Rotate(triangles[i].v0);
+		// Rotate(triangles[i].v1);
+		// Rotate(triangles[i].v2);
 
 		vertices[0] = triangles[i].v0;
 		vertices[1] = triangles[i].v1;
@@ -128,10 +181,12 @@ void Draw()
 
 void VertexShader(const vec3& v, ivec2& p) {
 
-	vec3 picturePlane;
-	picturePlane.x = v.x - cameraPos.x;
-	picturePlane.y = v.y - cameraPos.y;
-	picturePlane.z = v.z - cameraPos.z;
+	vec3 picturePlane = v;
+	Rotate(picturePlane);
+
+	picturePlane.x = picturePlane.x - cameraOrig.x;
+	picturePlane.y = picturePlane.y - cameraOrig.y;
+	picturePlane.z = picturePlane.z - cameraOrig.z;
 
 	p.x = focalLength * (picturePlane.x / picturePlane.z) + (SCREEN_WIDTH/2);
 	p.y = focalLength * (picturePlane.y / picturePlane.z) + (SCREEN_HEIGHT/2);
