@@ -23,14 +23,15 @@ float alpha = 2 * atan(((float)SCREEN_HEIGHT/2) / (float)SCREEN_WIDTH);
 vec3 cameraPos(0,0,-3.001);
 vec3 cameraOrig = cameraPos;
 
-mat3 R;
-float yaw = M_PI/256;
+float angle = M_PI/256;
 int axis = 0;
-float degreeH = 0;
-float degreeV = 0;
-vec3 rotRight = vec3(cos(degreeH), 0, sin(degreeH));
-vec3 rotDown = vec3(0, 1, 0);
-vec3 rotForward = vec3(-sin(degreeH), 0, cos(degreeH));
+float yaw = 0;
+float pitch = 0;
+vec3 rotRight;
+vec3 rotDown;
+vec3 rotForward;
+mat3 axisV(0,0,0,0,0,0,0,0,0);
+mat3 axisH(0,0,0,0,0,0,0,0,0);
 // ----------------------------------------------------------------------------
 // FUNCTIONS
 
@@ -56,20 +57,23 @@ int main( int argc, char* argv[] )
 }
 
 void Rotate(vec3& v) {
-	// testAngle += yaw;
+	// testAngle += angle;
 	if (axis == 0) {
 		rotRight = vec3(1, 0, 0);
-		rotDown = vec3(0, cos(degreeV), -sin(degreeV));
-		rotForward = vec3(0, sin(degreeV), cos(degreeV));
+		rotDown = vec3(0, cos(pitch), -sin(pitch));
+		rotForward = vec3(0, sin(pitch), cos(pitch));
+		axisV = mat3(rotRight,rotDown,rotForward);
 	} else {
-		rotRight = vec3(cos(degreeH), 0, sin(degreeH));
+		rotRight = vec3(cos(yaw), 0, sin(yaw));
 		rotDown = vec3(0, 1, 0);
-		rotForward = vec3(-sin(degreeH), 0, cos(degreeH));
+		rotForward = vec3(-sin(yaw), 0, cos(yaw));
+		axisH = mat3(rotRight,rotDown,rotForward);
 	}
 
-	float rotX = glm::dot(rotRight, v);
-	float rotY = glm::dot(rotDown, v);
-	float rotZ = glm::dot(rotForward, v);
+	mat3 rot = mat3(rotRight, rotDown, rotForward);	//axisV + axisH;
+	float rotX = glm::dot(rot[0], v);
+	float rotY = glm::dot(rot[1], v);
+	float rotZ = glm::dot(rot[2], v);
 
 	v = vec3(rotX, rotY, rotZ);
 }
@@ -83,29 +87,33 @@ void Update()
 	cout << "Render time: " << dt << " ms." << endl;
 
 	Uint8* keystate = SDL_GetKeyState(0);
-
+	if( keystate[SDLK_r] ) {
+		yaw = 0;
+		pitch = 0;
+		cameraPos = cameraOrig;
+	}
 	if( keystate[SDLK_UP] ) {
-		degreeV += yaw;
+		pitch += angle;
 		axis = 0;
 		cameraPos = cameraOrig;
 		Rotate(cameraPos);
 	}
 	if( keystate[SDLK_DOWN] ) {
-		degreeV -= yaw;
+		pitch -= angle;
 		axis = 0;
 		cameraPos = cameraOrig;
 		Rotate(cameraPos);
 	}
 
 	if( keystate[SDLK_RIGHT] ) {
-		degreeH += yaw;
+		yaw += angle;
 		axis = 1;
 		cameraPos = cameraOrig;
 		Rotate(cameraPos);
 	}
 
 	if( keystate[SDLK_LEFT] ) {
-		degreeH -= yaw;
+		yaw -= angle;
 		axis = 1;
 		cameraPos = cameraOrig;
 		Rotate(cameraPos);
@@ -232,4 +240,31 @@ void DrawPolygonEdges(const vector<vec3>& vertices) {
 		DrawLineSDL(screen, projectedVertices[i], projectedVertices[j], color);
 
 	}
+}
+
+void ComputePolygonRows(const vector<ivec2>& vertexPixels,
+	vector<ivec2>& leftPixels,
+	vector<ivec2>& rightPixels ) {
+
+	// 1. Find max and min y-value of the polygon 
+	// and compute the number of rows it occupies.
+	int minY = min(vertexPixels[0].y, min(vertexPixels[1].y, vertexPixels[2].y));
+	int maxY = max(vertexPixels[0].y, max(vertexPixels[1].y, vertexPixels[2].y));
+
+	// 2. Resize leftPixels and rightPixels 
+	// so that they have an element for each row.
+	int numRows = maxY - minY + 1;
+	leftPixels.resize();
+
+	// 3. Initialize the x-coordinates in leftPixels 
+	// to some really large value and the x-coordinates
+	// in rightPixels to some really small value.
+	for(int i=0; i<numRows; ++i) {
+		leftPixels[i].x = +numeric_limits<int>::max(); 
+		rightPixels[i].x = -numeric_limits<int>::max()
+	}
+	// 4. Loop through all edges of the polygon and use
+	// linear interpolation to find the x-coordinate for 
+	// each row it occupies. Update the corresponding 
+	// values in rightPixels and leftPixels. 
 }
