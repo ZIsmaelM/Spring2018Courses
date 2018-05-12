@@ -15,6 +15,14 @@ function simple_init(Ts)
     %The next command created control task and its periodicity (Ts)
     %The task run the matlab program named 'ctrl_code'
     ttCreatePeriodicTask('ctrl_task', starttime, period, 'ctrl_code', data);
-    ttSetPriority(2, 'ctrl_task');      %Assign priority number 2 to the task  
+    ttSetPriority(1, 'ctrl_task');      %Assign priority number 2 to the task
+    
+    %Disturb code initializer
+    ttCreatePeriodicTask('disturb_task', 0, Ts, 'disturb_code');
+    ttSetPriority(2, 'disturb_task');
+    
+    %DL code initializer
+    ttCreateHandler('simple_handler', 0, 'handler_code');
+    ttAttachDLHandler('ctrl_task', 'simple_handler');
 
 end
