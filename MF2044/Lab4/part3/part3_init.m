@@ -50,7 +50,7 @@ for i = 1:3
     data.oldI = 0;
     data.oldD = 0;
     
-    data.wcet = 0.0016;     % worst-case execution time
+    data.wcet = 0.0015;     % worst-case execution time
     
     ttCreatePeriodicTask(tasknames{i}, starttimes(i), periods(i), codefcn, data);
     if (setPriorities)

@@ -13,7 +13,7 @@ function [exectime, data]=ctrl_code(segement, data)
          targetPos = ttAnalogIn(1); %Read sensor input of the target position
          motorPos = ttAnalogIn(2);  %Read sensor input of the motor position
 
-         data.motorVel=data.K*(targetPos - motorPos);   %Compute the motor velocity
+         data.motorVel = data.K*(targetPos - motorPos);   %Compute the motor velocity
          exectime = rand*data.wcet;                     %The execution time is random between 0 and WCET
      case 2
          ttAnalogOut(1, data.motorVel);     %Send control command to the motor.The value of

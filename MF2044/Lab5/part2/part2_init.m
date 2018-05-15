@@ -19,6 +19,9 @@ data.wcetY = 0.4;
 data.wcetT3 = 0.5;
 data.taskID = [1 2 3];
 
+% Mutual exclusion
+%ttCreateSemaphore('P2_sema', 1, 1);
+
 % initialize system monitor
 ttCreateMonitor('P2_monitor');
 

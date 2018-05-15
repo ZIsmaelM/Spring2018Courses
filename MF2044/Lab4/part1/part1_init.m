@@ -12,6 +12,10 @@ function part1_init(Ts)
     data.Td = 0.049;    % derivative time
     data.B = 0.5;       % fraction of control reference
     data.N = 10;        % high-freq gain limit
+    data.oldY = 0;
+    data.oldI = 0;
+    data.oldD = 0;
+    data.u = 0;         % result of PID calculation
     
     data.wcet = 0.0013;     % worst-case execution time
     

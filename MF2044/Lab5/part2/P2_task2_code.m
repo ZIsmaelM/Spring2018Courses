@@ -5,6 +5,7 @@ global glbData;
 switch seg      
     % lock globals
     case 1
+        %ttTake('P2_sema');
         ttEnterMonitor('P2_monitor');
         exectime = 0;
     % set global x
@@ -23,6 +24,7 @@ switch seg
         exectime = 0;
     %unlock globals
     case 5
+        %ttGive('P2_sema');
         ttExitMonitor('P2_monitor');
         exectime = -1;
 end

@@ -6,10 +6,10 @@ function simple_init(Ts)
     ttInitKernel('prioFP')%Fixed priority scheduling
     
     %The data structure passes data to the control task
-    data.K =2;          %controller proportional gain
+    data.K = 2;          %controller proportional gain
     data.wcet = Ts;     % The worst-case execution time of the control task
 
-    starttime=0.0;      %control task start time
+    starttime = 0.0;      %control task start time
     period = Ts;        %control task period
 
     %The next command created control task and its periodicity (Ts)
