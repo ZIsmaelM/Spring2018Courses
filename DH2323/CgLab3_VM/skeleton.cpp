@@ -196,16 +196,72 @@ void VertexShader(const vec3& v, ivec2& p) {
 	p.y = focalLength * (picturePlane.y / picturePlane.z) + (SCREEN_HEIGHT/2);
 }
 
-void Interpolate( ivec2 a, ivec2 b, vector<ivec2>& result) {
-	int numSamples = result.size();
-	int numPoints = 2;
+// void Interpolate(Pixel a, Pixel b, vector<Pixel>& result)
+// {
+// 	int N = result.size();	
+// 	float stepX = float(b.x - a.x) / float(glm::max(N - 1, 1));
+// 	float stepY = float(b.y - a.y) / float(glm::max(N - 1, 1));
+// 	float stepZinv = float(b.zinv - a.zinv) / float(glm::max(N - 1, 1));
+// 	Pixel current(a);
+// 	for (int i = 0; i<N; ++i)
+// 	{
+// 		current.x = a.x + i*stepX;
+// 		current.y = a.y + i*stepY;
+// 		current.zinv = a.zinv + i*stepZinv;
+// 		result[i] = current;
+// 	}
+// }
 
-	for (int i = 0; i < numSamples; ++i) {
-		for (int j = 0; j < numPoints; ++j) {
-			float dist = b[j] - a[j];
-			float t = ((float)i/(numSamples-1)) * dist;
-			result[i][j] = a[j] + t;
-		}
+// void Interpolate( ivec2 a, ivec2 b, vector<ivec2>& result )
+// {
+   
+    
+//     int x0 = 0;
+//     unsigned long x1 = result.size() - 1;
+//     unsigned long dist = x1 - x0;
+//     //result[0] = a;
+//     //result[dist] = b;
+    
+//     if (result.size() == 1)
+//     {
+//         result[0] = a;
+//     }
+    
+//     for (int x = x0; x <= x1; ++x)
+//     {
+        
+//         result[x].x = (a.x * (x1 - x) + b.x * (x - x0)) / dist;
+//         result[x].y = (a.y * (x1 - x) + b.y * (x - x0)) / dist;
+//         //result[x].z = (a.z * (x1 - x) + b.z * (x - x0)) / dist;    
+//     }
+    
+// }
+
+void Interpolate( ivec2 a, ivec2 b, vector<ivec2>& result) {
+	// int numSamples = result.size();
+	// int numPoints = 2;
+
+	// for (int i = 0; i < numSamples; ++i) {
+	// 		float dist = b[0] - a[0];
+	// 		float t = ((float)i/(numSamples-1)) * dist;
+	// 		result[i][0] = a[0] + t;
+
+	// 		float dist = b[1] - a[1];
+	// 		float t = ((float)i/(numSamples-1)) * dist;
+	// 		result[i][1] = a[1] + t;
+	// }
+
+	int N = result.size();	
+	float stepX = float(b.x - a.x) / float(glm::max(N - 1, 1));
+	float stepY = float(b.y - a.y) / float(glm::max(N - 1, 1));
+	//float stepZinv = float(b.zinv - a.zinv) / float(glm::max(N - 1, 1));
+	ivec2 current(a);
+	for (int i = 0; i<N; ++i)
+	{
+		current.x = a.x + i*stepX;
+		current.y = a.y + i*stepY;
+		//current.zinv = a.zinv + i*stepZinv;
+		result[i] = current;
 	}
 
 	// // broke af
@@ -274,12 +330,15 @@ void ComputePolygonRows(const vector<ivec2>& vertexPixels,
 	// each row it occupies. Update the corresponding 
 	// values in rightPixels and leftPixels.
 
+	// Triangle outlines
+
 	// Loop over all vertices and draw the edge from it to the next vertex
 	vector<vector<ivec2>> edges(vertexPixels.size());
 	for(int i=0; i<vertexPixels.size(); ++i) {
+
 		int j = (i+1)%vertexPixels.size(); // The next vertex
 		ivec2 delta = glm::abs(vertexPixels[i]-vertexPixels[j]);
-		int pixels = glm::max(delta.x, delta.y) + 1;
+		int pixels = delta.y + 1;
 		vector<ivec2> result(pixels);
 
 		Interpolate(vertexPixels[i], vertexPixels[j], result);
@@ -303,15 +362,15 @@ void ComputePolygonRows(const vector<ivec2>& vertexPixels,
 			if(rightPixels[index].x < edges[i][j].x)
 				rightPixels[index] = edges[i][j];
 
-			// if(glm::abs(index - oldIndex) > 1) {
-			// 	leftPixels[(index+oldIndex)/2] = edges[i][j];
-			// 	rightPixels[(index+oldIndex)/2] = edges[i][j];
-			// 	cout << "you fucked up: " 
-			// 	<< edges[i][j].y << " "
-			// 	<< minY << " "
-			// 	<< index << " "
-			// 	<< oldIndex << endl;
-			// }
+			if(glm::abs(index - oldIndex) > 1) {
+				leftPixels[(index+oldIndex)/2] = edges[i][j];
+				rightPixels[(index+oldIndex)/2] = edges[i][j];
+				cout << "you fucked up: " 
+				<< edges[i][j].y << " "
+				<< minY << " "
+				<< index << " "
+				<< oldIndex << endl;
+			}
 			
 			oldIndex = index;
 		}
