@@ -26,14 +26,15 @@ vec3 cameraPos(0,0,-3.001);
 vec3 cameraOrig = cameraPos;
 
 float angle = M_PI/256;
-int axis = 0;
+//int axis = 0;
 float yaw = 0;
 float pitch = 0;
-vec3 rotRight;
-vec3 rotDown;
-vec3 rotForward;
-mat3 axisV(0,0,0,0,0,0,0,0,0);
-mat3 axisH(0,0,0,0,0,0,0,0,0);
+float roll = 0;
+int axis = 0;
+int numAxis = 3;
+mat3 axisX(0,0,0,0,0,0,0,0,0);
+mat3 axisY(0,0,0,0,0,0,0,0,0);
+mat3 axisZ(0,0,0,0,0,0,0,0,0);
 
 vec3 currentColor(0.2,0.2,0.2);
 
@@ -44,6 +45,8 @@ float depthBuffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 void Update();
 void Draw();
 void DrawTest();
+void ClearZBuff();
+void UpdateRotationMatrices();
 void DrawPolygonEdges(const vector<vec3>&);
 void DrawPolygon(const vector<vec3>&);
 void VertexShader(const vec3&, ivec2&);
@@ -62,6 +65,7 @@ int main( int argc, char* argv[] ) {
 	while( NoQuitMessageSDL() )
 	{
 		Update();
+		ClearZBuff();
 		Draw();
 		//usleep(51000000); // sleep for 51s
 	}
@@ -70,18 +74,41 @@ int main( int argc, char* argv[] ) {
 	return 0;
 }
 
-void Rotate(vec3& v) {
+void RotateWorld(vec3& v) {
+
+	vector<mat3> rotMatrices(numAxis);
+	rotMatrices[0] = axisX;
+	rotMatrices[1] = axisY;
+	rotMatrices[2] = axisZ;
+
+	for(int i=0; i<numAxis; ++i) {
+		float newX = glm::dot(rotMatrices[i][0], v);
+		float newY = glm::dot(rotMatrices[i][1], v);
+		float newZ = glm::dot(rotMatrices[i][2], v);
+
+		v.x = newX;
+		v.y = newY;
+		v.z = newZ;
+	}
+}
+
+vec3 RotateCamera(vec3& v) {
+	
+	vec3 rotRight;
+	vec3 rotDown;
+	vec3 rotForward;
+
 	// testAngle += angle;
 	if (axis == 0) {
 		rotRight = vec3(1, 0, 0);
 		rotDown = vec3(0, cos(pitch), -sin(pitch));
 		rotForward = vec3(0, sin(pitch), cos(pitch));
-		axisV = mat3(rotRight,rotDown,rotForward);
+		//axisV = mat3(rotRight,rotDown,rotForward);
 	} else {
 		rotRight = vec3(cos(yaw), 0, sin(yaw));
 		rotDown = vec3(0, 1, 0);
 		rotForward = vec3(-sin(yaw), 0, cos(yaw));
-		axisH = mat3(rotRight,rotDown,rotForward);
+		//axisH = mat3(rotRight,rotDown,rotForward);
 	}
 
 	mat3 rot = mat3(rotRight, rotDown, rotForward);	//axisV + axisH;
@@ -89,16 +116,18 @@ void Rotate(vec3& v) {
 	float rotY = glm::dot(rot[1], v);
 	float rotZ = glm::dot(rot[2], v);
 
-	v = vec3(rotX, rotY, rotZ);
+	return vec3(rotX, rotY, rotZ);
 }
+
 
 void ClearZBuff() {
 	for(int y=0; y<SCREEN_HEIGHT; ++y) {
 		for(int x=0; x<SCREEN_WIDTH; ++x) {
-			depthBuffer[y][x] = 0;
+			depthBuffer[y][x] = numeric_limits<float>::max();
 		}
 	}
 }
+
 void Update() {
 	// Compute frame time:
 	int t2 = SDL_GetTicks();
@@ -113,30 +142,29 @@ void Update() {
 		cameraPos = cameraOrig;
 	}
 	if( keystate[SDLK_UP] ) {
-		pitch += angle;
 		axis = 0;
-		cameraPos = cameraOrig;
-		Rotate(cameraPos);
+		pitch += angle;
+		cameraPos = RotateCamera(cameraOrig);
 	}
 	if( keystate[SDLK_DOWN] ) {
-		pitch -= angle;
 		axis = 0;
+		pitch -= angle;
 		cameraPos = cameraOrig;
-		Rotate(cameraPos);
+		cameraPos = RotateCamera(cameraOrig);
 	}
 
 	if( keystate[SDLK_RIGHT] ) {
-		yaw += angle;
 		axis = 1;
+		yaw += angle;
 		cameraPos = cameraOrig;
-		Rotate(cameraPos);
+		cameraPos = RotateCamera(cameraOrig);
 	}
 
 	if( keystate[SDLK_LEFT] ) {
-		yaw -= angle;
 		axis = 1;
+		yaw -= angle;
 		cameraPos = cameraOrig;
-		Rotate(cameraPos);
+		cameraPos = RotateCamera(cameraOrig);
 	}
 
 	if( keystate[SDLK_RSHIFT] )
@@ -167,6 +195,28 @@ void Update() {
 	// }
 	// cameraPos = cameraOrig;
 	// Rotate(cameraPos);
+	UpdateRotationMatrices();
+}
+
+void UpdateRotationMatrices() {
+
+	// update X rotation matrix
+	vec3 rotRight = vec3(1, 0, 0);
+	vec3 rotDown = vec3(0, cos(pitch), -sin(pitch));
+	vec3 rotForward = vec3(0, sin(pitch), cos(pitch));
+	axisX = mat3(rotRight,rotDown,rotForward);
+
+	// update Y rotation matrix
+	rotRight = vec3(cos(yaw), 0, sin(yaw));
+	rotDown = vec3(0, 1, 0);
+	rotForward = vec3(-sin(yaw), 0, cos(yaw));
+	axisY = mat3(rotRight,rotDown,rotForward);
+
+	// update Z rotation matrix
+	rotRight = vec3(cos(roll), -sin(roll), 0);
+	rotDown = vec3(sin(roll), cos(roll), 0);
+	rotForward = vec3(0, 0, 1);
+	axisZ = mat3(rotRight,rotDown,rotForward);
 }
 
 void Draw() {
@@ -189,7 +239,9 @@ void Draw() {
 		//DrawPolygonEdges(vertices);
 		//DrawTest();
 
-		ClearZBuff();
+		//RotateWorld(vertices[0]);
+		//RotateWorld(vertices[1]);
+		//RotateWorld(vertices[2]);
 		DrawPolygon(vertices);
 
 	}
@@ -203,15 +255,14 @@ void Draw() {
 void VertexShader(const vec3& v, Pixel& p) {
 
 	vec3 picturePlane = v;
-	Rotate(picturePlane);
+	picturePlane = RotateCamera(picturePlane);
 
-	picturePlane.x = picturePlane.x - cameraOrig.x;
-	picturePlane.y = picturePlane.y - cameraOrig.y;
-	picturePlane.z = picturePlane.z - cameraOrig.z;
+	picturePlane = picturePlane - cameraOrig; //cameraPos - picturePlane;
+	//RotateCamera(picturePlane);
 
 	p.x = focalLength * (picturePlane.x / picturePlane.z) + (SCREEN_WIDTH/2);
 	p.y = focalLength * (picturePlane.y / picturePlane.z) + (SCREEN_HEIGHT/2);
-	p.zinv = -(picturePlane.z); // get inverse of z
+	p.zinv = abs(glm::length(picturePlane)); // get inverse of z
 }
 
 void Interpolate( Pixel a, Pixel b, vector<Pixel>& result) {
@@ -228,12 +279,12 @@ void Interpolate( Pixel a, Pixel b, vector<Pixel>& result) {
 	// 		result[i][1] = a[1] + t;
 	// }
 
-	int N = result.size();	
-	float stepX = float(b.x - a.x) / float(glm::max(N - 1, 1));
-	float stepY = float(b.y - a.y) / float(glm::max(N - 1, 1));
-	float stepZinv = float(b.zinv - a.zinv) / float(glm::max(N - 1, 1));
+	int numSamples = result.size();	
+	float stepX = float(b.x - a.x) / float(glm::max(numSamples - 1, 1));
+	float stepY = float(b.y - a.y) / float(glm::max(numSamples - 1, 1));
+	float stepZinv = float(b.zinv - a.zinv) / float(glm::max(numSamples - 1, 1));
 	Pixel current(a);
-	for (int i = 0; i<N; ++i) {
+	for (int i = 0; i<numSamples; ++i) {
 		current.x = a.x + i*stepX;
 		current.y = a.y + i*stepY;
 		current.zinv = a.zinv + i*stepZinv;
@@ -243,8 +294,7 @@ void Interpolate( Pixel a, Pixel b, vector<Pixel>& result) {
 
 void DrawLineSDL(SDL_Surface* surface, Pixel a, Pixel b, vec3 color) {
 	
-	//Pixel delta = glm::abs(a-b);
-	int numPixels = glm::abs(a.y-b.y); + 1;
+	int numPixels = glm::abs(a.y-b.y) + 1;
 	vector<Pixel> line(numPixels);
 	Interpolate(a,b,line);
 	for(int i=0; i<line.size(); ++i) {
@@ -288,8 +338,10 @@ void ComputePolygonRows(const vector<Pixel>& vertexPixels,
 	// to some really large value and the x-coordinates
 	// in rightPixels to some really small value.
 	for(int i=0; i<numRows; ++i) {
+
 		leftPixels[i].x = +numeric_limits<int>::max(); 
 		rightPixels[i].x = -numeric_limits<int>::max();
+
 		leftPixels[i].y = minY;
 		rightPixels[i].y = minY;
 	}
@@ -301,64 +353,85 @@ void ComputePolygonRows(const vector<Pixel>& vertexPixels,
 	// Triangle outlines
 
 	// Loop over all vertices and draw the edge from it to the next vertex
-	vector<vector<Pixel>> edges(vertexPixels.size());
+	// vector<vector<Pixel>> edges(vertexPixels.size());
 	for(int i=0; i<vertexPixels.size(); ++i) {
 
 		int j = (i+1)%vertexPixels.size(); // The next vertex
 		int delta = glm::abs(vertexPixels[i].y-vertexPixels[j].y);
 		int pixels = delta + 1;
-		vector<Pixel> result(pixels);
+		vector<Pixel> edge(pixels);
 
-		Interpolate(vertexPixels[i], vertexPixels[j], result);
-		edges[i] = result;
-	}
+		Interpolate(vertexPixels[i], vertexPixels[j], edge);
+		//edges[i] = result;
 
-	// Check each edge
-	for(int i=0; i<edges.size(); ++i) {
-		// Check each pixel on the edge
-		int oldIndex = edges[i][0].y - minY;
-		for(int j=0; j<edges[i].size(); ++j) {
-			
-			int index = edges[i][j].y - minY;
-			// if(glm::abs(index - oldIndex) > 1) {
-			// 	int index2 = (index+oldIndex) / 2;
-			// 	leftPixels[index2] = edges[i][j];
-			// 	rightPixels[index2] = edges[i][j];
-			// }
-			if(leftPixels[index].x > edges[i][j].x)
-				leftPixels[index] = edges[i][j];
-			if(rightPixels[index].x < edges[i][j].x)
-				rightPixels[index] = edges[i][j];
+		for(int k=0; k<edge.size(); ++k) {
+			int index = edge[k].y - minY;
 
-			if(glm::abs(index - oldIndex) > 1) {
-				leftPixels[(index+oldIndex)/2] = edges[i][j];
-				rightPixels[(index+oldIndex)/2] = edges[i][j];
-				cout << "you fucked up: " 
-				<< edges[i][j].y << " "
-				<< minY << " "
-				<< index << " "
-				<< oldIndex << endl;
-			}
-			
-			oldIndex = index;
+			if(leftPixels[index].x > edge[k].x)
+				leftPixels[index] = edge[k];
+
+			if(rightPixels[index].x < edge[k].x)
+				rightPixels[index] = edge[k];
 		}
 	}
+
+	// // Check each edge
+	// for(int i=0; i<edges.size(); ++i) {
+	// 	// Check each pixel on the edge
+	// 	int oldIndex = edges[i][0].y - minY;
+	// 	for(int j=0; j<edges[i].size(); ++j) {
+			
+	// 		int index = edges[i][j].y - minY;
+
+	// 		if(leftPixels[index].x > edges[i][j].x)
+	// 			leftPixels[index] = edges[i][j];
+
+	// 		if(rightPixels[index].x < edges[i][j].x)
+	// 			rightPixels[index] = edges[i][j];
+			
+	// 		oldIndex = index;
+	// 	}
+	// }
 }
 
 void DrawPolygonRows(const vector<Pixel>& leftPixels, const vector<Pixel>& rightPixels) {
 	// for each row
 	for(int i=0; i<leftPixels.size(); ++i) {
-		int offset = 0;
-		int pixelX = leftPixels[i].x + offset;
-		int pixelY = leftPixels[i].y;
-		float pixelZ = leftPixels[i].zinv;
-		
-		// for each column
-		while(pixelX <= rightPixels[i].x) {
-			PutPixelSDL(screen, pixelX, pixelY, currentColor);
-			offset++;
-			pixelX = leftPixels[i].x + offset;
+		float a = glm::abs(leftPixels[i].x - rightPixels[i].x);
+		float b = glm::abs(leftPixels[i].y - rightPixels[i].y);
+		int numPixels = glm::max(a,b) + 1;
+
+		vector<Pixel> row(numPixels);
+		Interpolate(leftPixels[i],rightPixels[i],row);
+
+		for(int j=0; j<row.size(); ++j) {
+			// check if the pixel is within the scene view
+			if (row[j].x >= 0 && row[j].x < SCREEN_WIDTH 
+				&& row[j].y >= 0 && row[j].y < SCREEN_HEIGHT) {
+
+				if( row[j].zinv <= depthBuffer[row[j].x][row[j].y]) {
+					PutPixelSDL(screen, row[j].x, row[j].y, currentColor);
+					depthBuffer[row[j].x][row[j].y] = row[j].zinv;
+				}
+			}
 		}
+
+
+
+
+
+		// //DrawLineSDL(screen, leftPixels[i], rightPixels[i], currentColor);
+		// int offset = 0;
+		// int pixelX = leftPixels[i].x + offset;
+		// int pixelY = leftPixels[i].y;
+		// float pixelZ = leftPixels[i].zinv;
+		
+		// // for each column
+		// while(pixelX <= rightPixels[i].x) {
+		// 	PutPixelSDL(screen, pixelX, pixelY, currentColor);
+		// 	offset++;
+		// 	pixelX = leftPixels[i].x + offset;
+		// }
 	}
 }
 
@@ -374,24 +447,3 @@ void DrawPolygon(const vector<vec3>& vertices) {
 	ComputePolygonRows(vertexPixels, leftPixels, rightPixels);
 	DrawPolygonRows(leftPixels, rightPixels);
 }
-// void DrawTest() {
-	
-// 	vector<ivec2> vertexPixels(3); 
-// 	vertexPixels[0] = ivec2(10, 5); 
-// 	vertexPixels[1] = ivec2( 5,10); 
-// 	vertexPixels[2] = ivec2(15,15); 
-// 	vector<ivec2> leftPixels; 
-// 	vector<ivec2> rightPixels; 
-	
-// 	ComputePolygonRows( vertexPixels, leftPixels, rightPixels ); 
-	
-// 	for( int row=0; row<leftPixels.size(); ++row ) 
-// 	{ 
-// 		cout << "Start: (" 
-// 		<< leftPixels[row].x << "," 
-// 		<< leftPixels[row].y << "). " 
-// 		<< "End: (" 
-// 		<< rightPixels[row].x << "," 
-// 		<< rightPixels[row].y << "). " << endl; 
-// 	} 
-// }
