@@ -31,7 +31,7 @@ float yaw = 0;
 float pitch = 0;
 float roll = 0;
 int axis = 0;
-int numAxis = 3;
+
 mat3 axisX(0,0,0,0,0,0,0,0,0);
 mat3 axisY(0,0,0,0,0,0,0,0,0);
 mat3 axisZ(0,0,0,0,0,0,0,0,0);
@@ -82,7 +82,7 @@ int main( int argc, char* argv[] ) {
 	while( NoQuitMessageSDL() )
 	{
 		Update();
-		//ClearZBuff();
+		ClearZBuff();
 		Draw();
 		//usleep(51000000); // sleep for 51s
 	}
@@ -91,13 +91,16 @@ int main( int argc, char* argv[] ) {
 	return 0;
 }
 
+// Rotate by changing object positions
 void RotateWorld(vec3& v) {
 
+	int numAxis = 3;
 	vector<mat3> rotMatrices(numAxis);
 	rotMatrices[0] = axisX;
 	rotMatrices[1] = axisY;
 	rotMatrices[2] = axisZ;
 
+	// update the x, y, and z coordinates by the rotation matrices for each axis
 	for(int i=0; i<numAxis; ++i) {
 		float newX = glm::dot(rotMatrices[i][0], v);
 		float newY = glm::dot(rotMatrices[i][1], v);
@@ -109,26 +112,30 @@ void RotateWorld(vec3& v) {
 	}
 }
 
+// Rotate by changing camera position
 vec3 RotateCamera(vec3& v) {
 	
 	vec3 rotRight;
 	vec3 rotDown;
 	vec3 rotForward;
 
-	// testAngle += angle;
+	// rotate along X-axis
 	if (axis == 0) {
 		rotRight = vec3(1, 0, 0);
 		rotDown = vec3(0, cos(pitch), -sin(pitch));
 		rotForward = vec3(0, sin(pitch), cos(pitch));
-		//axisV = mat3(rotRight,rotDown,rotForward);
-	} else {
+
+	}
+	// rotate along Y-axis
+	else {
 		rotRight = vec3(cos(yaw), 0, sin(yaw));
 		rotDown = vec3(0, 1, 0);
 		rotForward = vec3(-sin(yaw), 0, cos(yaw));
-		//axisH = mat3(rotRight,rotDown,rotForward);
+
 	}
 
-	mat3 rot = mat3(rotRight, rotDown, rotForward);	//axisV + axisH;
+	// set new x, y, and z positions of vector
+	mat3 rot = mat3(rotRight, rotDown, rotForward);
 	float rotX = glm::dot(rot[0], v);
 	float rotY = glm::dot(rot[1], v);
 	float rotZ = glm::dot(rot[2], v);
@@ -136,7 +143,7 @@ vec3 RotateCamera(vec3& v) {
 	return vec3(rotX, rotY, rotZ);
 }
 
-
+// clear the depth buffer
 void ClearZBuff() {
 	for(int y=0; y<SCREEN_HEIGHT; ++y) {
 		for(int x=0; x<SCREEN_WIDTH; ++x) {
@@ -153,6 +160,8 @@ void Update() {
 	cout << "Render time: " << dt << " ms." << endl;
 
 	Uint8* keystate = SDL_GetKeyState(0);
+
+	// update rotation angle
 	if( keystate[SDLK_r] ) {
 		yaw = 0;
 		pitch = 0;
@@ -190,28 +199,26 @@ void Update() {
 	if( keystate[SDLK_RCTRL] )
 		;
 
-	// //Light source movement
-	// float lightSpeed = 0.1;
-	// if( keystate[SDLK_w] ) {
-	// 	lightPos.z += lightSpeed;
-	// }
-	// if( keystate[SDLK_s] ) {
-	// 	lightPos.z -= lightSpeed;
-	// }
-	// if( keystate[SDLK_a] ) {
-	// 	lightPos.x -= lightSpeed;
-	// }
-	// if( keystate[SDLK_d] ) {
-	// 	lightPos.x += lightSpeed;
-	// }
-	// if( keystate[SDLK_q] ) {
-	// 	lightPos.y -= lightSpeed;
-	// }
-	// if( keystate[SDLK_e] ) {
-	// 	lightPos.y += lightSpeed;
-	// }
-	// cameraPos = cameraOrig;
-	// Rotate(cameraPos);
+	// move light source
+	float lightSpeed = 0.1;
+	if( keystate[SDLK_w] )
+		lightPos.z += lightSpeed;
+
+	if( keystate[SDLK_s] )
+		lightPos.z -= lightSpeed;
+
+	if( keystate[SDLK_a] )
+		lightPos.x -= lightSpeed;
+
+	if( keystate[SDLK_d] )
+		lightPos.x += lightSpeed;
+
+	if( keystate[SDLK_q] )
+		lightPos.y -= lightSpeed;
+
+	if( keystate[SDLK_e] )
+		lightPos.y += lightSpeed;
+
 	UpdateRotationMatrices();
 }
 
@@ -237,18 +244,17 @@ void UpdateRotationMatrices() {
 }
 
 void Draw() {
-	ClearZBuff();
 	SDL_FillRect( screen, 0, 0 );
 
 	if( SDL_MUSTLOCK(screen) )
 		SDL_LockSurface(screen);
 	
-	focalLength = 500;//SCREEN_HEIGHT / (2 * tan(alpha/2));
+	focalLength = SCREEN_HEIGHT / (2 * tan(alpha/2));
 	for( int i=0; i<triangles.size(); ++i )
 	{
 		vector<Vertex> vertices(3);
 
-		float constantRef = 15.f;
+		// set position and origin for Pixel illumination
 		vertices[0].position = RotateCamera(triangles[i].v0);
 		vertices[1].position = RotateCamera(triangles[i].v1);
 		vertices[2].position = RotateCamera(triangles[i].v2);
@@ -256,6 +262,8 @@ void Draw() {
 		vertices[1].origin3D = triangles[i].v1;
 		vertices[2].origin3D = triangles[i].v2;
 
+		// set reflection and normal
+		float constantRef = 15.f;
 		currentNormal = RotateCamera(triangles[i].normal);
 		currentReflectance = vec3(1, 1, 1)*constantRef;
 
@@ -281,6 +289,7 @@ void Draw() {
 	SDL_UpdateRect( screen, 0, 0, 0, 0 );
 }
 
+// Calculate the light contribution for the given point
 vec3 ComputeLight(vec3 orig, vec3 currentLightPos, vec3 ref, vec3 norm) {
 
 	float r = glm::length(orig - currentLightPos);
@@ -291,6 +300,7 @@ vec3 ComputeLight(vec3 orig, vec3 currentLightPos, vec3 ref, vec3 norm) {
 
 	return R * currentColor;
 }
+
 void VertexShader(const Vertex& v, Pixel& p) {
 	
 	// Calculate points
@@ -318,11 +328,6 @@ void PixelShader( const Pixel& p) {
 	if( p.zinv >= depthBuffer[x][y]) {
 
 		vec3 color = ComputeLight(p.pos3D, lightPos, currentReflectance, currentNormal);
-		// float r = glm::length(p.pos3D - lightPos);
-		// float A = 4*M_PI*r*r;
-		// ray = glm::normalize(lightPos - v.position);
-		// vec3 D = (lightPower * max(glm::dot(ray, currentNormal), 0.f)) / A;
-		// vec3 R = currentReflectance * D + indirectLightPowerPerArea;
 
 		depthBuffer[x][y] = p.zinv;
 		PutPixelSDL(screen, x, y, color);
@@ -331,21 +336,22 @@ void PixelShader( const Pixel& p) {
 void Interpolate( Pixel a, Pixel b, vector<Pixel>& result) {
 
 	int numSamples = result.size();	
-	float stepX = float(b.x - a.x) / float(glm::max(numSamples - 1, 1));
-	float stepY = float(b.y - a.y) / float(glm::max(numSamples - 1, 1));
-	float stepZinv = float(b.zinv - a.zinv) / float(glm::max(numSamples - 1, 1));
+	float deltaX = float(b.x - a.x) / float(glm::max(numSamples - 1, 1));
+	float deltaY = float(b.y - a.y) / float(glm::max(numSamples - 1, 1));
+	float deltaZinv = float(b.zinv - a.zinv) / float(glm::max(numSamples - 1, 1));
 	
-	//vec3 stepIllumination = (b.illumination - a.illumination) / float(glm::max(numSamples - 1, 1));
+	//vec3 deltaLumen = (b.illumination - a.illumination) / float(glm::max(numSamples - 1, 1));
 	vec3 step3D = (b.pos3D - a.pos3D) / float(glm::max(numSamples - 1, 1));
 
-	Pixel current(a);
+	// set the data for all sample points between a and b
+	Pixel nextSample(a);
 	for (int i = 0; i<numSamples; ++i) {
-		current.x = a.x + i*stepX;
-		current.y = a.y + i*stepY;
-		current.zinv = a.zinv + i*stepZinv;
-		result[i] = current;
-		//current.illumination += stepIllumination;
-		current.pos3D += step3D;
+		nextSample.x = a.x + i*deltaX;
+		nextSample.y = a.y + i*deltaY;
+		nextSample.zinv = a.zinv + i*deltaZinv;
+		result[i] = nextSample;
+		//nextSample.illumination += deltaLumen;
+		nextSample.pos3D += step3D;
 	}
 }
 
@@ -410,20 +416,20 @@ void ComputePolygonRows(const vector<Pixel>& vertexPixels,
 	// values in rightPixels and leftPixels.
 	for(int i=0; i<vertexPixels.size(); ++i) {
 
-		int j = (i+1)%vertexPixels.size(); // The next vertex
-		int delta = glm::abs(vertexPixels[i].y-vertexPixels[j].y);
-		int pixels = delta + 1;
-		vector<Pixel> edge(pixels);
-
+		// create the polygon edges
+		int j = (i+1)%vertexPixels.size();
+		int numPixels = glm::abs(vertexPixels[i].y-vertexPixels[j].y) + 1;
+		vector<Pixel> edge(numPixels);
 		Interpolate(vertexPixels[i], vertexPixels[j], edge);
-		//edges[i] = result;
 
+		// test each pixel along the given edge
 		for(int k=0; k<edge.size(); ++k) {
 			int index = edge[k].y - minY;
 
+			// update the leftPixels array if the given x point it smaller
 			if(leftPixels[index].x > edge[k].x)
 				leftPixels[index] = edge[k];
-
+			// update the rightPixels array if the given x point it larger
 			if(rightPixels[index].x < edge[k].x)
 				rightPixels[index] = edge[k];
 		}
@@ -434,42 +440,30 @@ void ComputePolygonRows(const vector<Pixel>& vertexPixels,
 void DrawPolygonRows(const vector<Pixel>& leftPixels, const vector<Pixel>& rightPixels) {
 	// for each row
 	for(int i=0; i<leftPixels.size(); ++i) {
-		float a = glm::abs(leftPixels[i].x - rightPixels[i].x);
-		float b = glm::abs(leftPixels[i].y - rightPixels[i].y);
-		int numPixels = glm::max(a,b) + 1;
-
+		// get the sample points between the given left and right pixels
+		float samplesX = glm::abs(leftPixels[i].x - rightPixels[i].x) + 1;
+		float samplesY = glm::abs(leftPixels[i].y - rightPixels[i].y) + 1;
+		int numPixels = glm::max(samplesX,samplesY);
 		vector<Pixel> row(numPixels);
 		Interpolate(leftPixels[i],rightPixels[i],row);
 
 		for(int j=0; j<row.size(); ++j) {
+			int pixelX = row[j].x;
+			int pixelY = row[j].y;
 			// check if the pixel is within the scene view
-			if (row[j].x >= 0 && row[j].x < SCREEN_WIDTH 
-				&& row[j].y >= 0 && row[j].y < SCREEN_HEIGHT) {
+			if (pixelX >= 0 && pixelX < SCREEN_WIDTH 
+				&& pixelY >= 0 && pixelY < SCREEN_HEIGHT) {
 
-				if( row[j].zinv >= depthBuffer[row[j].x][row[j].y]) {
+				// draw the pixel if it is closer to the camera than the current depth
+				float pixelDepth = row[j].zinv;
+				float currentDepth = depthBuffer[pixelX][pixelY];
+				if(pixelDepth >= currentDepth) {
 					PixelShader(row[j]);
 					//PutPixelSDL(screen, row[j].x, row[j].y, currentColor);
 					//depthBuffer[row[j].x][row[j].y] = row[j].zinv;
 				}
 			}
 		}
-
-
-
-
-
-		// //DrawLineSDL(screen, leftPixels[i], rightPixels[i], currentColor);
-		// int offset = 0;
-		// int pixelX = leftPixels[i].x + offset;
-		// int pixelY = leftPixels[i].y;
-		// float pixelZ = leftPixels[i].zinv;
-		
-		// // for each column
-		// while(pixelX <= rightPixels[i].x) {
-		// 	PutPixelSDL(screen, pixelX, pixelY, currentColor);
-		// 	offset++;
-		// 	pixelX = leftPixels[i].x + offset;
-		// }
 	}
 }
 
