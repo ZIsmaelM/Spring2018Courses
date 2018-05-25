@@ -210,7 +210,7 @@ void Draw()
 			if(ClosestIntersection(ray, triangles, pixel)) {
 				Triangle tri = triangles[pixel.index];
 				vec3 light = DirectLight(pixel);
-				color = (light+indirectLight)*tri.color;
+				color = (light+indirectLight)*tri.color;//tri.color;
 			}
 
 			PutPixelSDL( screen, x, y, color );

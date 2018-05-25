@@ -79,7 +79,6 @@ int main( int argc, char* argv[] )
 		}
 		Update();
 		DrawStars();
-		//DrawColors();
 		blur++;
 		starVelocity = 0.0005;
 	}
