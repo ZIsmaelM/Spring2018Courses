@@ -58,7 +58,7 @@ struct Vertex {
 	vec3 position;
 	vec3 normal;
 	vec3 reflectance;
-	vec3 origin3D;
+	//vec3 origin3D;
 };
 
 void Update();
@@ -209,9 +209,9 @@ void Draw() {
 		vertices[0].position = Rotate(triangles[i].v0);
 		vertices[1].position = Rotate(triangles[i].v1);
 		vertices[2].position = Rotate(triangles[i].v2);
-		vertices[0].origin3D = triangles[i].v0;
-		vertices[1].origin3D = triangles[i].v1;
-		vertices[2].origin3D = triangles[i].v2;
+		// vertices[0].origin3D = triangles[i].v0;
+		// vertices[1].origin3D = triangles[i].v1;
+		// vertices[2].origin3D = triangles[i].v2;
 
 		// set reflection and normal
 		float constantRef = 15.f;
@@ -247,8 +247,8 @@ void VertexShader(const Vertex& v, Pixel& p) {
 	vec3 ray = v.position - cameraOrig;
 	p.x = (int)(focalLength * (ray.x / ray.z) + (SCREEN_WIDTH/2));
 	p.y = (int)(focalLength * (ray.y / ray.z) + (SCREEN_HEIGHT/2));
-	p.zinv = 1.f/ray.z;
-	p.pos3D = v.origin3D;
+	p.zinv = 1.0f/ray.z;
+	p.pos3D = v.position;
 
 }
 
@@ -270,18 +270,26 @@ void Interpolate( Pixel a, Pixel b, vector<Pixel>& result) {
 	float deltaY = float(b.y - a.y) / float(glm::max(numSamples - 1, 1));
 	float deltaZinv = float(b.zinv - a.zinv) / float(glm::max(numSamples - 1, 1));
 	
-	//vec3 deltaLumen = (b.illumination - a.illumination) / float(glm::max(numSamples - 1, 1));
-	vec3 delta3D = (b.pos3D - a.pos3D) / float(glm::max(numSamples - 1, 1));
+	// a.illumination *= a.zinv;
+	// b.illumination *= b.zinv;
+	// vec3 deltaLumen = (b.illumination - a.illumination) / float(glm::max(numSamples - 1, 1));
+	
+	// perspective projection
+	vec3 origPos = a.pos3D;
+	a.pos3D *= a.zinv;
+	b.pos3D *= b.zinv;
+	vec3 deltaPos = (b.pos3D - a.pos3D) / float(glm::max(numSamples - 1, 1));
 
 	// set the data for all sample points between a and b
 	Pixel nextSample(a);
 	for (int i = 0; i<numSamples; ++i) {
+		result[i] = nextSample;
 		nextSample.x = a.x + i*deltaX;
 		nextSample.y = a.y + i*deltaY;
-		nextSample.zinv = a.zinv + i*deltaZinv;
-		result[i] = nextSample;
+		nextSample.zinv = a.zinv + i*deltaZinv;	
 		//nextSample.illumination += deltaLumen;
-		nextSample.pos3D += delta3D;
+		//((pos * (float) i + a.pos3d) / current.zinv);
+		nextSample.pos3D = (a.pos3D + (float)i*deltaPos) / nextSample.zinv;
 	}
 }
 
