@@ -283,13 +283,14 @@ void Interpolate( Pixel a, Pixel b, vector<Pixel>& result) {
 	// set the data for all sample points between a and b
 	Pixel nextSample(a);
 	for (int i = 0; i<numSamples; ++i) {
-		result[i] = nextSample;
+		
 		nextSample.x = a.x + i*deltaX;
 		nextSample.y = a.y + i*deltaY;
 		nextSample.zinv = a.zinv + i*deltaZinv;	
 		//nextSample.illumination += deltaLumen;
 		//((pos * (float) i + a.pos3d) / current.zinv);
 		nextSample.pos3D = (a.pos3D + (float)i*deltaPos) / nextSample.zinv;
+		result[i] = nextSample;
 	}
 }
 
